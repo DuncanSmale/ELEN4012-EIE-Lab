@@ -3,8 +3,14 @@ clc
 N = 200;
 M = 100;
 K = 100;
-save("H.mat", "H_rev", "H");
-load H.mat H
+% save("H.mat", "H_rev", "H");
+% load H.mat H
+% load messages.mat messages
+% 
+% messages = messages';
+% writematrix(messages);
+
+readmatrix('messages.txt');
 
 % this for loop helped generate a non singular A matrix 
 % for i = 1:1000
