@@ -1,2 +1,5 @@
 *.asv
 .venv
+.vscode
+*.xlsx
+*.txt

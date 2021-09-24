@@ -3,10 +3,10 @@ function [] = Simulate(SNR_start, SNR_end, SNR_step, Num_messages)
 %   Detailed explanation goes here
 
 % load parity check matrix
-load invertible.mat H_rev
+load H.mat H_rev
 H_gf = gf(H_rev); % use to verify codewords
-A_gf = gf(H_rev(:, 1:end/2));
-B_gf = gf(H_rev(:, end/2 + 1:end));
+B_gf = gf(H_rev(:, 1:end/2));
+A_gf = gf(H_rev(:, end/2 + 1:end));
 A_inv = inv(A_gf);
 
 A = double(A_gf.x);
