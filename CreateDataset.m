@@ -52,7 +52,22 @@ if type == InputTypes.Naive %% Naive dataset
     if percent_noisy ~= 0
         dataset(:, noisy_index + 1: end) = x;
     end
-
+    
+elseif type == InputTypes.NaiveSyndrome %% NaiveSyndrome dataset
+    
+    for j = 1:size(x,2)
+        x(:, j) = real(demodulator(x(:, j)))';
+    end
+    
+    if percent_noisy ~= 0
+        dataset(:, noisy_index + 1: end) = x;
+    end
+    size(dataset)
+    size(H)
+    syndromes = mod(H * dataset, 2);
+    
+    dataset = [dataset; syndromes];
+        
 elseif type == InputTypes.LLR %% LLR dataset 
     index = 1;
     for j = SNR
@@ -67,7 +82,7 @@ elseif type == InputTypes.LLR %% LLR dataset
     for i = 1:noisy_index
         dataset(:, i) = real(modulator(dataset(:, i)))';
     end
-    dataset(:, 1: noisy_index) = GetLLR(dataset(:, 1: noisy_index), 0);
+    dataset(:, 1: noisy_index) = GetLLR(dataset(:, 1: noisy_index), 15);
     dataset = round(dataset, 3);
 
 elseif type == InputTypes.Votes %% Vote dataset
