@@ -25,8 +25,10 @@ num_noisy = percent_noisy * num_messages;
 noisy_index
 num_noisy
 
+%disp("Dataset:")
 dataset = GetCodeword(A_inv, B_gf, messages);
 correct = CheckCodeword(gf(H), dataset)
+%disp("To be Noise-added (Right) Section:")
 x = dataset(:, noisy_index+1:end);
 
 num_per_noise = num_noisy/numel(SNR);
@@ -43,12 +45,15 @@ if percent_noisy ~= 0
         x(:, index:index+step-1) = awgn(x(:, index:index+step-1), i, 'measured');
     end
 end
-
+%disp("Received Nosiy x:")
+x;
+%[sizerow,sizecol] = size(x)
 if type == InputTypes.Naive %% Naive dataset
     
     for j = 1:size(x,2)
         x(:, j) = real(demodulator(x(:, j)))';
     end
+
     if percent_noisy ~= 0
         dataset(:, noisy_index + 1: end) = x;
     end
@@ -70,8 +75,24 @@ elseif type == InputTypes.LLR %% LLR dataset
     dataset(:, 1: noisy_index) = GetLLR(dataset(:, 1: noisy_index), 0);
     dataset = round(dataset, 3);
 
-elseif type == InputTypes.Votes %% Vote dataset
-    
+elseif type == InputTypes.Vote %% Vote dataset
+    temp_votes = zeros(size(dataset));
+    %demodulate noisy part
+    for j = 1:size(x,2)
+        x(:, j) = real(demodulator(x(:, j)))';
+    end
+
+    if percent_noisy ~= 0
+        %Add the nosiy part to dataset
+        dataset(:, noisy_index + 1: end) = x;
+        %calculate the votes for non-noisy (should be all 0) and noisy parts
+        for j = 1:size(dataset,2)
+            temp_votes(:,j) = GetVotes(H,dataset(:,j));
+        end
+        %Add the votes to the dataset
+        dataset = [dataset; temp_votes];
+    end
+
 elseif type == InputTypes.LLRVotes %% LLR + Votes dataset
     
 end
