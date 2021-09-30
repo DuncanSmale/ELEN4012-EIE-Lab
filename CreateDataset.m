@@ -9,6 +9,7 @@ function [dataset,messages] = CreateDataset(type, num_messages, H, percent_noisy
 
 percent_noisy = clamp(percent_noisy, 0, 1);
 percent_noisy
+SNR_no_variance = 15;
 
 B_gf = gf(H(:, 1:end/2));
 A_gf = gf(H(:, end/2 + 1:end));
@@ -87,7 +88,7 @@ elseif type == InputTypes.LLR %% LLR dataset
     for i = 1:noisy_index
         dataset(:, i) = real(modulator(dataset(:, i)))';
     end
-    dataset(:, 1: noisy_index) = GetLLR(dataset(:, 1: noisy_index), 15);
+    dataset(:, 1: noisy_index) = GetLLR(dataset(:, 1: noisy_index), SNR_no_variance);
     dataset = round(dataset, 3);
 
 elseif type == InputTypes.Vote %% Vote dataset
@@ -127,7 +128,7 @@ elseif type == InputTypes.LLRVote %% LLR + Votes dataset
     for i = 1:noisy_index
         dataset(:, i) = real(modulator(dataset(:, i)))';
     end
-    dataset(:, 1: noisy_index) = GetLLR(dataset(:, 1: noisy_index), 0);
+    dataset(:, 1: noisy_index) = GetLLR(dataset(:, 1: noisy_index), SNR_no_variance);
     dataset = round(dataset, 3);
 
     %----------Votes Part----------
