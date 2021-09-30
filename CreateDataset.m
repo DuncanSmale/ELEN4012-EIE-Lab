@@ -73,7 +73,7 @@ elseif type == InputTypes.LLR %% LLR dataset
         dataset(:, i) = real(modulator(dataset(:, i)))';
     end
     dataset(:, 1: noisy_index) = GetLLR(dataset(:, 1: noisy_index), 0);
-    dataset = round(dataset, 3);
+    dataset = round(dataset, 3)
 
 elseif type == InputTypes.Vote %% Vote dataset
     temp_votes = zeros(size(dataset));
@@ -93,12 +93,49 @@ elseif type == InputTypes.Vote %% Vote dataset
         dataset = [dataset; temp_votes];
     end
 
-elseif type == InputTypes.LLRVotes %% LLR + Votes dataset
+elseif type == InputTypes.LLRVote %% LLR + Votes dataset
+    %Copies of the original x and dataset need to be kept to work out votes
+    x_votes = x;
+    dataset_votes = dataset;
+
+    %----------LLR Part----------
+    index = 1;
+    for j = SNR
+        x(:, index:index+step-1) = GetLLR(x(:, index:index+step-1), j);
+        index = index + step;
+    end
     
+    dataset(:, noisy_index + 1: end) = x;
+    
+    % since we are using LLR in the whole data set we need to get the 
+    % LLR of the non noisy sections
+    for i = 1:noisy_index
+        dataset(:, i) = real(modulator(dataset(:, i)))';
+    end
+    dataset(:, 1: noisy_index) = GetLLR(dataset(:, 1: noisy_index), 0);
+    dataset = round(dataset, 3);
+
+    %----------Votes Part----------
+    temp_votes = zeros(size(dataset_votes));
+    %demodulate noisy part
+    for j = 1:size(x_votes,2)
+       x_votes(:, j) = real(demodulator(x_votes(:, j)))';
+    end
+
+    if percent_noisy ~= 0
+        %Add the nosiy part to dataset
+        dataset_votes(:, noisy_index + 1: end) = x_votes;
+        %calculate the votes for non-noisy (should be all 0) and noisy parts
+        for j = 1:size(dataset_votes,2)
+            temp_votes(:,j) = GetVotes(H,dataset_votes(:,j));
+        end
+        %Add the votes to the dataset
+        dataset = [dataset; temp_votes];
+        %[rowds,colds] = size(dataset)
+    end
 end
 
 dataset = dataset';
-
 % shuffle rows to make sure that the noisy data is mixed with the normal
 % data, this will ensure minimal data bias
 random_order = randperm(num_messages);
