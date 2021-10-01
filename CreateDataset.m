@@ -23,8 +23,8 @@ demodulator = comm.BPSKDemodulator;
 rng(seed);
 messages = randi([0 1], num_messages, 100);
 
-noisy_index = (1-percent_noisy) * num_messages; % how much of the data is noise
-num_noisy = percent_noisy * num_messages;
+noisy_index = int32((1-percent_noisy) * num_messages); % how much of the data is noise
+num_noisy = int32(percent_noisy * num_messages);
 noisy_index
 num_noisy
 
@@ -182,6 +182,7 @@ elseif type == InputTypes.LLRVote %% LLR + Votes dataset
 end
 
 dataset = dataset';
+snrs = round(snrs, 3);
 % size(snrs)
 dataset = [dataset snrs];
 % shuffle rows to make sure that the noisy data is mixed with the normal

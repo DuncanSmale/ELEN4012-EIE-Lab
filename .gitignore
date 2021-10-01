@@ -3,3 +3,6 @@
 .vscode
 *.xlsx
 *.txt
+
+Python/models/*
+*.pyc
