@@ -1,6 +1,6 @@
  classdef InputTypes
    enumeration
-      Naive, LLR, Vote, LLRVote
+      Naive, NaiveSyndrome, LLR, Vote, NaiveVote, LLRVote
    end
  end
 
