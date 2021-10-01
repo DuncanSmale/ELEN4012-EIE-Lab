@@ -38,6 +38,7 @@ writematrix(dataset, dataset_name);
 writematrix(messages, message_name);
 
 function num_string = NumToString(num)
+num_string = num2str(num);
 if mod(num, 1e6) ~= num
     format = "%u";
     if mod(num, 1e6) ~= 0
