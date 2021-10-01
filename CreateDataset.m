@@ -7,9 +7,11 @@ function [dataset,messages] = CreateDataset(type, num_messages, H, percent_noisy
 %   seed:           int - rng seed
 %   SNR:            [] double - the SNR values to generate data for
 
+% TODO add SNR to all data sets and fix the size of the inputs to 201
+
 percent_noisy = clamp(percent_noisy, 0, 1);
 percent_noisy
-SNR_no_variance = 15;
+SNR_no_variance = 100;
 
 B_gf = gf(H(:, 1:end/2));
 A_gf = gf(H(:, end/2 + 1:end));
@@ -39,13 +41,20 @@ index = 1;
 for i = 1:size(x,2)
     x(:, i) = real(modulator(x(:, i)))';
 end
-
+snrs = [];
 if percent_noisy ~= 0
     for i = SNR
         % add noise to each codeword: "received" vector
+        c_mod = x(:, index:index+step-1);
         x(:, index:index+step-1) = awgn(x(:, index:index+step-1), i, 'measured');
+        for j = index:index+step-1
+            actualSNR = snr(c_mod(:, j - index + 1), x(:, j)-c_mod(:, j - index + 1));
+            snrs = [snrs; actualSNR];
+        end
+        index = index+step;
     end
 end
+snrs = [SNR_no_variance * ones(noisy_index, 1); snrs];
 %disp("Received Nosiy x:")
 x;
 %[sizerow,sizecol] = size(x)
@@ -77,7 +86,11 @@ elseif type == InputTypes.NaiveSyndrome %% NaiveSyndrome dataset
 elseif type == InputTypes.LLR %% LLR dataset 
     index = 1;
     for j = SNR
-        x(:, index:index+step-1) = GetLLR(x(:, index:index+step-1), j);
+        for k = index:index+step-1
+            actualSNR = snr(c_mod(:, k - index + 1), x(:, k)-c_mod(:, k - index + 1));
+            x(:, k) = GetLLR(x(:, k), actualSNR);
+        end
+        
         index = index + step;
     end
     
@@ -152,6 +165,8 @@ elseif type == InputTypes.LLRVote %% LLR + Votes dataset
 end
 
 dataset = dataset';
+% size(snrs)
+dataset = [dataset snrs];
 % shuffle rows to make sure that the noisy data is mixed with the normal
 % data, this will ensure minimal data bias
 random_order = randperm(num_messages);
