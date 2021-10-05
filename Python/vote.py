@@ -16,9 +16,9 @@ from matplotlib import pyplot
 import time
 
 SEED = 42
-DATATYPE = 'VOTE'
-SIZE = '1K'
-SNR = '_-2_2.5SNR'
+DATATYPE = 'LLRMultVote'
+SIZE = '10K'
+SNR = '_0_6SNR'
 NOISE_PERCENT = '100'
 X_PATH = '../' + DATATYPE + '/' + SIZE + SNR + \
     NOISE_PERCENT + 'data' + DATATYPE + '.txt'
@@ -46,7 +46,7 @@ def get_model(n_inputs, n_ouputs):
     num_hidden = NUM_HIDDEN
     drop = 0.1
     dense = int(10*(n_inputs-1))
-    # opt = tf.keras.optimizers.SGD(
+    #opt = tf.keras.optimizers.SGD(
     #     learning_rate=0.02, momentum=0.9)
     opt = tf.keras.optimizers.Adam(learning_rate=1e-4)
     model = Sequential()

@@ -124,7 +124,29 @@ temp_votes = zeros(size(dataset));
         %Replace dataset with only votes 
         dataset = temp_votes;
     end
-elseif type == InputTypes.NaiveVote %% Naive and Vote dataset (was called 'Vote')
+elseif type == InputTypes.NaiveMultVote %Quantized Naive * (Max Vote - Vote)
+    temp_votes = zeros(size(dataset));
+    %demodulate noisy part
+    for j = 1:size(x,2)
+        x(:, j) = decode_bpsk(real(demodulator(x(:, j)))'); %Note this line is now decoded
+    end
+
+    if percent_noisy ~= 0
+        %Add the nosiy part to dataset
+        dataset(:, noisy_index + 1: end) = x;
+        %calculate the votes for non-noisy (should be all 0) and noisy parts
+        for j = 1:size(dataset,2)
+            temp_votes(:,j) = GetVotes(H,dataset(:,j));
+        end
+        max_votes = max(max(temp_votes));
+        %Add the votes to the dataset
+        %dataset = dataset .* (1./(1+temp_votes));
+        %dataset = dataset .* (max_votes-temp_votes);
+        %Replace dataset with only votes 
+        %dataset = dataset .* (1./(1+temp_votes));
+    end
+
+elseif type == InputTypes.NaiveVote %% [Naive; Vote] dataset (was called 'Vote')
     temp_votes = zeros(size(dataset));
     %demodulate noisy part
     for j = 1:size(x,2)
@@ -142,7 +164,7 @@ elseif type == InputTypes.NaiveVote %% Naive and Vote dataset (was called 'Vote'
         dataset = [dataset; temp_votes];
     end
 
-elseif type == InputTypes.LLRVote %% LLR + Votes dataset
+elseif type == InputTypes.LLRVote %% [LLR; Votes] dataset
     %Copies of the original x and dataset need to be kept to work out votes
     x_votes = x;
     dataset_votes = dataset;
@@ -182,6 +204,62 @@ elseif type == InputTypes.LLRVote %% LLR + Votes dataset
         dataset = [dataset; temp_votes];
         %[rowds,colds] = size(dataset)
     end
+
+elseif type == InputTypes.LLRMultVote %% LLR * (Max Votes - Votes)
+    %%See many options in last line of elseif
+    
+    %Copies of the original x and dataset need to be kept to work out votes
+    x_votes = x;
+    dataset_votes = dataset;
+
+    %----------LLR Part----------
+    index = 1;
+    for j = SNR
+        x(:, index:index+step-1) = GetLLR(x(:, index:index+step-1), j);
+        index = index + step;
+    end
+    
+    dataset(:, noisy_index + 1: end) = x;
+    
+    % since we are using LLR in the whole data set we need to get the 
+    % LLR of the non noisy sections
+    for i = 1:noisy_index
+        dataset(:, i) = real(modulator(dataset(:, i)))';
+    end
+    dataset(:, 1: noisy_index) = GetLLR(dataset(:, 1: noisy_index), SNR_no_variance);
+    dataset = round(dataset, 3);
+
+    %----------Votes Part----------
+    temp_votes = zeros(size(dataset_votes));
+    %demodulate noisy part
+    for j = 1:size(x_votes,2)
+       x_votes(:, j) = real(demodulator(x_votes(:, j)))';
+    end
+    %----------x_naive----------
+%     x_naive = x_votes;
+%     for j = 1:size(x_naive,2)
+%        x_naive(:, j) = decode_demod_bpsk(real(demodulator(x_naive(:, j)))');
+%     end
+    %------------------------------
+    if percent_noisy ~= 0
+        %Add the nosiy part to dataset
+        dataset_votes(:, noisy_index + 1: end) = x_votes;
+        %calculate the votes for non-noisy (should be all 0) and noisy parts
+        for j = 1:size(dataset_votes,2)
+            temp_votes(:,j) = GetVotes(H,dataset_votes(:,j));
+        end
+        max_votes = max(max(temp_votes));
+        %Add the votes to the dataset
+        %dataset = dataset .* (1./(1+temp_votes));
+        %dataset = dataset + (1/1).*(max_votes-temp_votes);
+        %dataset = dataset + (max_votes-temp_votes);
+        %dataset = dataset + (max_votes-temp_votes) + x_votes;
+        %dataset = [x_votes ; dataset .* (max_votes-temp_votes)];
+        dataset = dataset .* (max_votes-temp_votes);
+        %dataset = dataset .* (max_votes-temp_votes) .* x_naive; %% Need to
+        %uncomment x_naive above
+        %[rowds,colds] = size(dataset)
+    end
 end
 
 dataset = dataset';
@@ -198,5 +276,27 @@ end
 function y = clamp(x,bl,bu)
   % return bounded value clipped between bl and bu
   y=min(max(x,bl),bu);
+end
+
+function out = decode_demod_bpsk(rcvd)
+    out = zeros(size(rcvd));
+    for bit = 1:size(rcvd,2)
+        if rcvd(bit) <= 0
+            out(bit) = 1;
+        else
+            out(bit) = 0;
+        end
+    end
+end
+
+function out = decode_bpsk(rcvd)
+    out = zeros(size(rcvd));
+    for bit = 1:size(rcvd,2)
+        if rcvd(bit) <= 0
+            out(bit) = -1;
+        else
+            out(bit) = 1;
+        end
+    end
 end
 
