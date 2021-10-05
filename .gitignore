@@ -6,3 +6,4 @@
 
 Python/models/*
 *.pyc
+__pychace__
