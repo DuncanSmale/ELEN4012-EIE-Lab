@@ -11,7 +11,7 @@ function [dataset,messages] = CreateDataset(type, num_messages, H, percent_noisy
 
 percent_noisy = clamp(percent_noisy, 0, 1);
 percent_noisy
-SNR_no_variance = 100;
+SNR_no_variance = 15;
 
 B_gf = gf(H(:, 1:end/2));
 A_gf = gf(H(:, end/2 + 1:end));
@@ -25,17 +25,17 @@ messages = randi([0 1], num_messages, 100);
 
 noisy_index = int32((1-percent_noisy) * num_messages); % how much of the data is noise
 num_noisy = int32(percent_noisy * num_messages);
-noisy_index
-num_noisy
+% noisy_index
+% num_noisy
 
 %disp("Dataset:")
 dataset = GetCodeword(A_inv, B_gf, messages);
-correct = CheckCodeword(gf(H), dataset)
+% correct = CheckCodeword(gf(H), dataset)
 %disp("To be Noise-added (Right) Section:")
 x = dataset(:, noisy_index+1:end);
 
 num_per_noise = num_noisy/numel(SNR);
-step = num_per_noise
+step = num_per_noise;
 index = 1;
 
 for i = 1:size(x,2)
@@ -46,7 +46,10 @@ if percent_noisy ~= 0
     for i = SNR
         % add noise to each codeword: "received" vector
         c_mod = x(:, index:index+step-1);
-        x(:, index:index+step-1) = awgn(x(:, index:index+step-1), i, 'measured');
+        dimens = [size(x,1), step];
+        noise = GetNoise(dimens, i);
+%         x(:, index:index+step-1) = awgn(x(:, index:index+step-1), i, 'measured');
+        x(:, index:index+step-1) = x(:, index:index+step-1) + noise;
         for j = index:index+step-1
             actualSNR = snr(c_mod(:, j - index + 1), x(:, j)-c_mod(:, j - index + 1));
             snrs = [snrs; actualSNR];
@@ -183,13 +186,13 @@ end
 
 dataset = dataset';
 snrs = round(snrs, 3);
-% size(snrs)
+size(snrs)
 dataset = [dataset snrs];
 % shuffle rows to make sure that the noisy data is mixed with the normal
 % data, this will ensure minimal data bias
-random_order = randperm(num_messages);
-dataset = dataset(random_order, :);
-messages = messages(random_order,:);
+% random_order = randperm(num_messages);
+% dataset = dataset(random_order, :);
+% messages = messages(random_order,:);
 end
 
 function y = clamp(x,bl,bu)

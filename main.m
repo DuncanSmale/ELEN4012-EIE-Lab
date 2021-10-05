@@ -1,43 +1,15 @@
 clc
 % this is the file used to test some of the generation used for the lab
-N = 200;
-M = 100;
-K = 100;
-% save("H.mat", "H_rev", "H");
-% load H.mat H
-% load messages.mat messages
-% 
-% messages = messages';
-% writematrix(messages);
 
-readmatrix('messages.txt');
+LLRModel = 'Python/models/LLR10K_0_6SNR100H2tanh.h5';
+LLRNet = importKerasNetwork(LLRModel)
+SNR = 0;
 
-% this for loop helped generate a non singular A matrix 
-% for i = 1:1000
-%     cols = randi([1 200], 1, 2);
-%     h = H(:,cols(1));
-%     H(:,cols(1)) = H(:,cols(2));
-%     H(:,cols(2)) = h;
-%     A = gf(H(:, 1:end/2));
-%     if det(A) ~= 0
-%         break
-%     end
-% end
+load H.mat H_rev
+H = H_rev;
 
-A_gf = gf(H(:, 1:end/2));
-B_gf = gf(H(:, end/2 + 1:end));
-
-A = double(A_gf.x);
-B = double(B_gf.x);
-
-H_rev = [B A];
-[row, col] = find(H_rev);
-I = [row col];
-index = sparse(I(:,1),I(:,2),1);
-encoder = comm.LDPCEncoder('ParityCheckMatrix',index);
-
-seed = 1; % seeding the random number generation for recontruction
-rng(seed);
+% seed = 1; % seeding the random number generation for recontruction
+% rng(seed);
 num_messages = 1;
 m = randi([0 1], num_messages, 100);
 m_gf = gf(m);
@@ -47,39 +19,30 @@ demodulator = comm.BPSKDemodulator;
 
 A_inv = inv(A_gf);
 
-c = A_inv * B_gf * m';
-x_gf = [m c']';
-x = double(x_gf.x);
-c_enc = encoder(m');
+[row, col] = find(H_rev);
+I = [row col];
+index = sparse(I(:,1),I(:,2),1);
+decoder = comm.LDPCDecoder('ParityCheckMatrix',index);
 
-LogicalStr = {'false', 'true'};
-check_arr = xor(x, c_enc);
-check = all(check_arr(:)==0);
+c = GetCodeword(A_inv, B_gf, m);
+c_mod = real(modulator(c));
+noise = GetNoise(size(c_mod), SNR);
+x = c_mod + noise;
+xhat = real(demodulator(x));
+% synd = mod(H * xhat,2);
+% naivesynd = [xhat; synd]';
+snr_calc = snr(c_mod, x-c_mod)
+x = GetLLR(x, snr_calc);
+decoded_matlab = decoder(x);
 
-% checking mathematical encoding vs MATLAB encoding
-fprintf("Encoder same as math: %s\n", LogicalStr{check + 1});
+decoded_netork = predict(LLRNet, [x; snr_calc]');
+testkeras_round = round(decoded_netork);
 
-% as SNR increases check_dec will = 1, as message decoded = message sent
-SNR = 10;
-mod_codeword = real(bpsk(c_enc))';
-noise_codeword = awgn(mod_codeword, SNR,'measured');
-
-message = decoder(noise_codeword');
-message = double(message)';
-
-check_decarr = xor(message, m);
-sum(check_decarr)
-check_dec = all(check_decarr(:)==0)
-
-H_gf = gf(H);
-
-y_gf = H_gf * x_gf;
-
-y = y_gf.x;
-
-correct = zeros(0,1);
-for i = 1:num_messages
-    correct(i) = all(y(i,:)==0);
-end
-
-% all(correct(:) == true)
+testdecoder_check = xor(decoded_matlab', m);
+testkeras_check = xor(testkeras_round, m);
+testhard_check = xor(xhat(1:100)', m);
+% check_decoder = all(testdecoder_check(:) == 0)
+% check_keras = all(testkeras_check(:) == 0)
+num_errors_decoder = sum(testdecoder_check)
+num_errors_keras = sum(testkeras_check)
+num_errors_hard = sum(testhard_check)
