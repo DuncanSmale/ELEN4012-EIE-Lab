@@ -72,3 +72,17 @@ decoder = (decoder/(n_blocks*200))';
 keras = (keras/(n_blocks*200));
 hard = (hard/(n_blocks*200))';
 Decoders = table(SNR, decoder, keras, hard)
+
+%Optional Plotting
+figure
+hold on
+semilogy(decoder)
+semilogy(keras)
+semilogy(hard)
+hold off
+%Because 'keras' contains two models, include two legend items - see below
+%Give proper names for legend when feel it's time
+legend("decoder","Keras 1","Keras 2","hard");
+xlabel("SNR");
+ylabel("BER");
+
