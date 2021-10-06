@@ -32,17 +32,41 @@ rcvd_msg = [0 1 0 0 1 0 0];
 
 % 1 ==> 0
 % -1 ==> 1
-rcvd = [-7 -4 2 13 3 9 -1];
+% rcvd = [-7 -4 2 13 3 9 -1];
+% 
+% a = decode_demod_bpsk(rcvd);
+% 
+% function out = decode_demod_bpsk(rcvd)
+%     out = zeros(size(rcvd));
+%     for bit = 1:size(rcvd,2)
+%         if rcvd(bit) <= 0
+%             out(bit) = 1;
+%         else
+%             out(bit) = 0;
+%         end
+%     end
+% end
 
-a = decode_demod_bpsk(rcvd);
+%% Tanner Graph Diagram
+load H.mat H_rev
+H = H_rev;
+% H = [H;H];
+%Make a random MxN adjacency matrix
+m = 100;
+n = 200;
+a = rand(m,n)>.25;
+% Expand out to symmetric (M+N)x(M+N) matrix
+%This line is a big of a fib - this matrix is not H, but big_a
+%Use as pretty picture, not as an actual diagram
+big_a = [zeros(m,m), H;
+         H', zeros(n,n)];     
 
-function out = decode_demod_bpsk(rcvd)
-    out = zeros(size(rcvd));
-    for bit = 1:size(rcvd,2)
-        if rcvd(bit) <= 0
-            out(bit) = 1;
-        else
-            out(bit) = 0;
-        end
-    end
-end
+
+g = graph(big_a);
+% Plot
+h = plot(g);
+% Make it pretty
+h.XData(1:m) = 1;
+h.XData((m+1):end) = 2;
+h.YData(1:m) = linspace(0,1,m);
+h.YData((m+1):end) = linspace(0,1,n);
