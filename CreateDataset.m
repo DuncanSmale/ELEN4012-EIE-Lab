@@ -141,7 +141,7 @@ elseif type == InputTypes.NaiveMultVote %Quantized Naive * (Max Vote - Vote)
         max_votes = max(max(temp_votes));
         %Add the votes to the dataset
         %dataset = dataset .* (1./(1+temp_votes));
-        %dataset = dataset .* (max_votes-temp_votes);
+        dataset = dataset .* (max_votes-temp_votes);
         %Replace dataset with only votes 
         %dataset = dataset .* (1./(1+temp_votes));
     end
@@ -204,8 +204,8 @@ elseif type == InputTypes.LLRVote %% [LLR; Votes] dataset
         dataset = [dataset; temp_votes];
         %[rowds,colds] = size(dataset)
     end
-
-elseif type == InputTypes.LLRMultVote %% LLR * (Max Votes - Votes)
+elseif contains(string(type),string(InputTypes.LLRMultVote))
+%elseif type == InputTypes.LLRMultVote %% LLR * (Max Votes - Votes)
     %%See many options in last line of elseif
     
     %Copies of the original x and dataset need to be kept to work out votes
@@ -236,10 +236,12 @@ elseif type == InputTypes.LLRMultVote %% LLR * (Max Votes - Votes)
        x_votes(:, j) = real(demodulator(x_votes(:, j)))';
     end
     %----------x_naive----------
-%     x_naive = x_votes;
-%     for j = 1:size(x_naive,2)
-%        x_naive(:, j) = decode_demod_bpsk(real(demodulator(x_naive(:, j)))');
-%     end
+    if(contains(string(type),string(InputTypes.LLRMultVoteMultNaive)))
+        x_naive = x_votes;
+        for j = 1:size(x_naive,2)
+           x_naive(:, j) = decode_demod_bpsk(real(demodulator(x_naive(:, j)))');
+        end
+    end
     %------------------------------
     if percent_noisy ~= 0
         %Add the nosiy part to dataset
@@ -249,15 +251,19 @@ elseif type == InputTypes.LLRMultVote %% LLR * (Max Votes - Votes)
             temp_votes(:,j) = GetVotes(H,dataset_votes(:,j));
         end
         max_votes = max(max(temp_votes));
+        %Other possibilities for input schemes
         %Add the votes to the dataset
         %dataset = dataset .* (1./(1+temp_votes));
         %dataset = dataset + (1/1).*(max_votes-temp_votes);
         %dataset = dataset + (max_votes-temp_votes);
         %dataset = dataset + (max_votes-temp_votes) + x_votes;
         %dataset = [x_votes ; dataset .* (max_votes-temp_votes)];
-        dataset = dataset .* (max_votes-temp_votes);
-        %dataset = dataset .* (max_votes-temp_votes) .* x_naive; %% Need to
-        %uncomment x_naive above
+        
+        if(contains(string(type),string(InputTypes.LLRMultVoteMultNaive)))
+            dataset = dataset .* (max_votes-temp_votes) .* x_naive;
+        else
+            dataset = dataset .* (max_votes-temp_votes);
+        end
         %[rowds,colds] = size(dataset)
     end
 end
