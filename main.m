@@ -3,7 +3,8 @@ clc
 % this is the file used to test some of the generation used for the lab
 
 file_prefix = "Python/models/";
-models = ["LLR10K_0_6SNR100H10tanh.h5", "LLR10K_0_6SNR100H5tanh.h5"];
+models = ["LLRVoteRange10K_0_6SNR100H2tanh.h5"];
+labels = [];
 nets = cell(numel(models),1);
 for i = 1:numel(models)
     file = file_prefix + models(i);
@@ -44,18 +45,51 @@ for  i = 1:numel(SNR)
         c_mod = real(modulator(c));
         noise = GetNoise(size(c_mod), SNR(i));
         x = c_mod + noise;
+        x_thresh = x;
         xhat = real(demodulator(x));
+        votes = GetVotes(H, xhat);
         snr_calc = snr(c_mod, x-c_mod);
         x = GetLLR(x, snr_calc);
         decoded_matlab = decoderLDPC(x);
         for k = 1:numel(nets)
-            arr = [x; snr_calc]';
+            % getting relevant dataset
+            if contains(model(k), string(InputTypes.LLRVoteRange))
+                flipped = FlipFromVote(x_thresh, votes, x);
+                arr = [flipped; snr_calc]';
+                labels = [labels, string(InputTypes.LLRVoteRange)];
+                
+            elseif contains(model(k), string(InputTypes.LLRMultVoteMultNaive))
+                labels = [labels, string(InputTypes.LLRMultVoteMultNaive)];
+                
+            elseif contains(model(k), string(InputTypes.LLRMultVote))
+                labels = [labels, string(InputTypes.LLRMultVote)];
+                
+            elseif contains(model(k), string(InputTypes.NaiveMultVote))
+                labels = [labels, string(InputTypes.NaiveMultVote)];
+                
+            elseif contains(model(k), string(InputTypes.LLRVote))
+                labels = [labels, string(InputTypes.LLRVote)];
+                
+            elseif contains(model(k), string(InputTypes.NaiveVote))
+                labels = [labels, string(InputTypes.NaiveVote)];
+                
+            elseif contains(model(k), string(InputTypes.Vote))
+                labels = [labels, string(InputTypes.Vote)];
+                
+            elseif contains(model(k), string(InputTypes.LLR))
+                arr = [x; snr_calc]';
+                labels = [labels, string(InputTypes.LLR)];
+                
+            elseif contains(model(k), string(InputTypes.Naive))
+                labels = [labels, string(InputTypes.Naive)];
+                
+            end
             decoded_netork = predict(nets{k}, arr);
             testkeras_round = round(decoded_netork);
             testkeras_check = xor(testkeras_round, m);
             errors_keras(k) = errors_keras(k) + sum(testkeras_check);
         end
-
+        
         testdecoder_check = xor(decoded_matlab', m);
         
         testhard_check = xor(xhat(1:100)', m);
@@ -83,7 +117,8 @@ semilogy(hard)
 hold off
 %Because 'keras' contains two models, include two legend items - see below
 %Give proper names for legend when feel it's time
-legend("decoder","Keras 1","Keras 2","hard");
+labels = ["decoder",labels,"hard"];
+legend(labels);
 xlabel("SNR");
 ylabel("BER");
 

@@ -23,7 +23,7 @@ demodulator = comm.BPSKDemodulator;
 rng(seed);
 messages = randi([0 1], num_messages, 100);
 
-noisy_index = int32((1-percent_noisy) * num_messages); % how much of the data is noise
+noisy_index = int32((1-percent_noisy) * num_messages) % how much of the data is noise
 num_noisy = int32(percent_noisy * num_messages);
 % noisy_index
 % num_noisy
@@ -267,6 +267,42 @@ elseif contains(string(type),string(InputTypes.LLRMultVote))
         end
         %[rowds,colds] = size(dataset)
     end
+elseif type == InputTypes.LLRVoteRange
+    x_thresh = x;
+    x_LLR = x;
+    %demodulate noisy part
+    for j = 1:size(x,2)
+        x(:, j) = real(demodulator(x(:, j)))';
+    end
+    
+    x_votes = x;
+    dataset_votes = dataset;
+    index = 1;
+    %----------Votes Part----------
+    temp_votes = zeros(size(dataset_votes));
+    
+    if percent_noisy ~= 0
+        %Add the nosiy part to dataset
+        dataset_votes(:, noisy_index + 1: end) = x_votes;
+        %calculate the votes for non-noisy (should be all 0) and noisy parts
+        for j = 1:size(dataset_votes,2)
+            temp_votes(:,j) = GetVotes(H,dataset_votes(:,j));
+        end
+    end
+    %----------LLR Part----------
+    for j = SNR
+        for k = index:index+step-1
+            actualSNR = snr(c_mod(:, k - index + 1), x_LLR(:, k)-c_mod(:, k - index + 1));
+            x_LLR(:, k) = GetLLR(x_LLR(:, k), actualSNR);
+            vec = x_thresh(:, k);
+            vec = FlipFromVote(vec, temp_votes(:,k), x_LLR(:, k));
+            dataset(:, k) = vec;
+        end
+        
+        index = index + step;
+    end
+    dataset;
+    dataset = round(dataset, 3);
 end
 
 dataset = dataset';
