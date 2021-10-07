@@ -129,7 +129,7 @@ elseif type == InputTypes.NaiveMultVote %Quantized Naive * (Max Vote - Vote)
     temp_votes = zeros(size(dataset));
     %demodulate noisy part
     for j = 1:size(x,2)
-        x(:, j) = decode_demod_bpsk(real(demodulator(x(:, j)))',0); %Note this line is now decoded
+        x(:, j) = Schemes.decode_demod_bpsk(real(demodulator(x(:, j)))',0); %Note this line is now decoded
     end
 
     if percent_noisy ~= 0
@@ -139,10 +139,11 @@ elseif type == InputTypes.NaiveMultVote %Quantized Naive * (Max Vote - Vote)
         for j = 1:size(dataset,2)
             temp_votes(:,j) = GetVotes(H,dataset(:,j));
         end
-        max_votes = max(max(temp_votes));
+        %max_votes = max(max(temp_votes));
         %Add the votes to the dataset
         %dataset = dataset .* (1./(1+temp_votes));
-        dataset = dataset .* (max_votes-temp_votes);
+        dataset = Schemes.processNaiveMultVote(dataset,temp_votes);
+        %%%dataset = dataset .* (max_votes-temp_votes);
         %Replace dataset with only votes 
         %dataset = dataset .* (1./(1+temp_votes));
     end
@@ -240,7 +241,7 @@ elseif contains(string(type),string(InputTypes.LLRMultVote))
     if(contains(string(type),string(InputTypes.LLRMultVoteMultNaive)))
         x_naive = x_votes;
         for j = 1:size(x_naive,2)
-           x_naive(:, j) = decode_demod_bpsk(real(demodulator(x_naive(:, j)))',1);
+           x_naive(:, j) = Schemes.decode_demod_bpsk(real(demodulator(x_naive(:, j)))',1);
         end
     end
     %------------------------------
@@ -251,7 +252,7 @@ elseif contains(string(type),string(InputTypes.LLRMultVote))
         for j = 1:size(dataset_votes,2)
             temp_votes(:,j) = GetVotes(H,dataset_votes(:,j));
         end
-        max_votes = max(max(temp_votes));
+        %max_votes = max(max(temp_votes));
         %Other possibilities for input schemes
         %Add the votes to the dataset
         %dataset = dataset .* (1./(1+temp_votes));
@@ -261,9 +262,11 @@ elseif contains(string(type),string(InputTypes.LLRMultVote))
         %dataset = [x_votes ; dataset .* (max_votes-temp_votes)];
         
         if(contains(string(type),string(InputTypes.LLRMultVoteMultNaive)))
-            dataset = dataset .* (max_votes-temp_votes) .* x_naive;
+            %dataset = dataset .* (max_votes-temp_votes) .* x_naive;
+            dataset = Schemes.processLLRMultVoteMultNaive(x_naive,dataset,temp_votes);
         else
-            dataset = dataset .* (max_votes-temp_votes);
+            %dataset = dataset .* (max_votes-temp_votes);
+            dataset = Schemes.processLLRMultVote(dataset,temp_votes);
         end
         %[rowds,colds] = size(dataset)
     end
@@ -295,7 +298,7 @@ elseif type == InputTypes.LLRVoteRange
             actualSNR = snr(c_mod(:, k - index + 1), x_LLR(:, k)-c_mod(:, k - index + 1));
             x_LLR(:, k) = GetLLR(x_LLR(:, k), actualSNR);
             vec = x_thresh(:, k);
-            vec = FlipFromVote(vec, temp_votes(:,k), x_LLR(:, k));
+            vec = Schemes.processFlipFromVote(vec, x_LLR(:, k), temp_votes(:,k));
             dataset(:, k) = vec;
         end
         
