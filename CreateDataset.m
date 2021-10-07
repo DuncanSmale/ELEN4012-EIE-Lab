@@ -113,7 +113,7 @@ elseif type == InputTypes.NaiveMultVote %Quantized Naive * (Max Vote - Vote)
     temp_votes = zeros(size(dataset));
     %demodulate noisy part
     for j = 1:size(x,2)
-        x(:, j) = decode_bpsk(real(demodulator(x(:, j)))'); %Note this line is now decoded
+        x(:, j) = decode_demod_bpsk(real(demodulator(x(:, j)))',0); %Note this line is now decoded
     end
 
     if percent_noisy ~= 0
@@ -224,7 +224,7 @@ elseif contains(string(type),string(InputTypes.LLRMultVote))
     if(contains(string(type),string(InputTypes.LLRMultVoteMultNaive)))
         x_naive = x_votes;
         for j = 1:size(x_naive,2)
-           x_naive(:, j) = decode_demod_bpsk(real(demodulator(x_naive(:, j)))');
+           x_naive(:, j) = decode_demod_bpsk(real(demodulator(x_naive(:, j)))',1);
         end
     end
     %------------------------------
@@ -269,25 +269,4 @@ function y = clamp(x,bl,bu)
   y=min(max(x,bl),bu);
 end
 
-function out = decode_demod_bpsk(rcvd)
-    out = zeros(size(rcvd));
-    for bit = 1:size(rcvd,2)
-        if rcvd(bit) <= 0
-            out(bit) = 1;
-        else
-            out(bit) = 0;
-        end
-    end
-end
-
-function out = decode_bpsk(rcvd)
-    out = zeros(size(rcvd));
-    for bit = 1:size(rcvd,2)
-        if rcvd(bit) <= 0
-            out(bit) = -1;
-        else
-            out(bit) = 1;
-        end
-    end
-end
 
