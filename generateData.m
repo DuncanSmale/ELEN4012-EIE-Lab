@@ -4,14 +4,14 @@
 clc
 load H.mat H_rev
 
-% InputTypes are: Naive, NaiveSyndrome, LLR, Vote, LLRVote
-type = InputTypes.LLR; 
+% InputTypes are: Naive, NaiveSyndrome, LLR, Vote, NaiveVote, LLRVote, NaiveMultVote, LLRMultVote
+type = InputTypes.LLRMultVote; 
 
 % how many messages/codewords to generate
-num_messages = 20000;
-
+%num_messages = 20000;
+num_messages = 1000;
 % make this between 0 and 1
-percent_noisy = 0.9;
+percent_noisy = 1;
 
 % rng seed to use
 seed = 1;
@@ -20,6 +20,7 @@ seed = 1;
 % range of SNR values to use in the noisy portion of the dataset
 % SNR = 0:0.2:4.8; 
 SNR = 0:2:6;
+%SNR = -2.0:0.5:2.5;
 
 [dataset, messages] = CreateDataset(type, num_messages, H_rev, percent_noisy, seed, SNR);
 

@@ -17,7 +17,7 @@ import time
 
 SEED = 42
 DATATYPE = 'LLRMultVote'
-SIZE = '10K'
+SIZE = '1K'
 SNR = '_0_6SNR'
 NOISE_PERCENT = '100'
 X_PATH = '../' + DATATYPE + '/' + SIZE + SNR + \

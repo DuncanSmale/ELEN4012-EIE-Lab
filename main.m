@@ -6,6 +6,7 @@ file_prefix = "Python/models/";
 file_suffix = "10K_0_6SNR100H3tanh.h5";
 models = ["Naive", "LLR", "Vote", "NaiveMultVote",...
     "LLRMultVote", "LLRMultVoteMultNaive", "LLRVoteRange"];
+%models = ["LLRMultVote1K_0_6SNR100H2tanh.h5","LLR1K_0_6SNR100H2tanh.h5"];
 labels = [];
 nets = cell(numel(models),1);
 for i = 1:numel(models)
