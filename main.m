@@ -7,34 +7,37 @@ file_suffix = "10K_0_6SNR100H3tanh.h5";
 models = ["Naive", "LLR", "Vote", "NaiveMultVote",...
     "LLRMultVote", "LLRMultVoteMultNaive", "LLRVoteRange"];
 %models = ["LLRMultVote1K_0_6SNR100H2tanh.h5","LLR1K_0_6SNR100H2tanh.h5"];
+% file_suffix = "10K_20_30SNR100H8tanh.h5";
+
+%file_suffix = ".h5";
+% models = ["Naive", "LLR", "Vote", "NaiveMultVote",...
+%     "LLRMultVote", "LLRMultVoteMultNaive", "LLRVoteRange"];
+%models = ["LLR"];
 labels = [];
 nets = cell(numel(models),1);
 for i = 1:numel(models)
     file = file_prefix + models(i) + file_suffix;
     nets{i} = importKerasNetwork(file);
 end
-SNR = 0:1:6;
-
-load H.mat H_rev
-H = H_rev;
+SNR = 30:40;
 
 % seed = 1; % seeding the random number generation for recontruction
 % rng(seed);
-num_messages = 1;
-m = randi([0 1], num_messages, 100);
-m_gf = gf(m);
+matrix = readmatrix("newMatrix.txt", "Delimiter", " ");
+columns = readmatrix("columns.txt", "Delimiter", " ");
+columns = columns + 1;
+info_loc = columns(1:end/2);
+parity_loc = columns(end/2+1:end);
+H = matrix;
+H2 = H(:, columns);
+
+[temp, order] = sort(columns);
+spH2 = sparse(H2);
+decoderLDPC = comm.LDPCDecoder('ParityCheckMatrix',spH2);
 
 modulator = comm.BPSKModulator;
 demodulator = comm.BPSKDemodulator;
 
-B_gf = gf(H(:, 1:end/2));
-A_gf = gf(H(:, end/2 + 1:end));
-A_inv = inv(A_gf);
-
-[row, col] = find(H_rev);
-I = [row col];
-index = sparse(I(:,1),I(:,2),1);
-decoderLDPC = comm.LDPCDecoder('ParityCheckMatrix',index);
 n_blocks = 1000;
 decoder = zeros(size(SNR));
 keras = zeros(size(SNR,1), numel(nets));
@@ -44,7 +47,8 @@ for  i = 1:numel(SNR)
     errors_keras = zeros(1, numel(nets));
     errors_hard = 0;
     for j = 1:n_blocks
-        c = GetCodeword(A_inv, B_gf, m);
+        m = randi([0 1], 1, 100);
+        c = GetCodeword(encoder, info_loc, parity_loc, m);
         c_mod = real(modulator(c));
         noise = GetNoise(size(c_mod), SNR(i));
         x = c_mod + noise;
@@ -53,7 +57,7 @@ for  i = 1:numel(SNR)
         votes = GetVotes(H, xhat);
         snr_calc = snr(c_mod, x-c_mod);
         x = GetLLR(x, snr_calc);
-        decoded_matlab = decoderLDPC(x);
+        decoded_matlab = decoderLDPC(x([info_loc parity_loc]));
         for k = 1:numel(nets)
             % getting relevant dataset
             if contains(models(k), string(InputTypes.LLRVoteRange))
@@ -127,7 +131,7 @@ for  i = 1:numel(SNR)
         
         testdecoder_check = xor(decoded_matlab', m);
         
-        testhard_check = xor(xhat(1:100)', m);
+        testhard_check = xor(xhat(info_loc)', m);
         % check_decoder = all(testdecoder_check(:) == 0)
         % check_keras = all(testkeras_check(:) == 0)
         errors_decoder = errors_decoder + sum(testdecoder_check);

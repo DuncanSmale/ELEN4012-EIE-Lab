@@ -1,8 +1,13 @@
-function [x] = GetCodeword(A_inv,B_gf, m)
+function [codewords] = GetCodeword(encoder, info_loc, parity_loc, m)
 %ENCODE using c = inv(A)Bm to get parity checks
 %   Detailed explanation goes here
-c = A_inv * B_gf * m';
-x_gf = [m'; c];
-x = double(x_gf.x);
+codewords = zeros(size(m,1), 200);
+[temp, order] = sort([info_loc, parity_loc]);
+for i = 1:size(m,1)
+    inter = step(encoder, m(i, :)');
+    codeword = inter(order);
+    codewords(i, :) = codeword;
+end
+codewords = codewords';
 end
 

@@ -1,4 +1,4 @@
-function [dataset,messages] = CreateDataset(type, num_messages, H, percent_noisy, seed, SNR)
+function [dataset,messages] = CreateDataset(type, num_messages, encoder, info_loc, parity_loc,  H, percent_noisy, seed, SNR)
 %CREATEDATASET creates a dataset based on given parameters
 %   type:           InputTypes - Naive, LLR, Votes, LLRVotes
 %   num_messages:   int - how many messages
@@ -11,11 +11,7 @@ function [dataset,messages] = CreateDataset(type, num_messages, H, percent_noisy
 
 percent_noisy = clamp(percent_noisy, 0, 1);
 percent_noisy
-SNR_no_variance = 15;
-
-B_gf = gf(H(:, 1:end/2));
-A_gf = gf(H(:, end/2 + 1:end));
-A_inv = inv(A_gf);
+SNR_no_variance = 100;
 
 modulator = comm.BPSKModulator;
 demodulator = comm.BPSKDemodulator;
@@ -29,10 +25,13 @@ num_noisy = int32(percent_noisy * num_messages);
 % num_noisy
 
 %disp("Dataset:")
-dataset = GetCodeword(A_inv, B_gf, messages);
+dataset = GetCodeword(encoder, info_loc, parity_loc, messages);
 % correct = CheckCodeword(gf(H), dataset)
 %disp("To be Noise-added (Right) Section:")
 x = dataset(:, noisy_index+1:end);
+if max(abs(mod(H*dataset,2)))>0
+    error('Parity-check equations violated');
+end
 
 num_per_noise = num_noisy/numel(SNR);
 step = num_per_noise;
