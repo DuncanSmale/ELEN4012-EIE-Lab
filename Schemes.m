@@ -11,8 +11,8 @@ classdef Schemes
             datasetOut = LLRValues .* (max_votes-VoteValues) .* NaiveValues;
         end
 
-        function datasetOut = processLLRMultVote(VoteValues,LLRValues)
-            max_votes = max(max(VoteValues));
+        function datasetOut = processLLRMultVote(LLRValues,VoteValues)
+            max_votes = max(max(VoteValues))
             datasetOut = LLRValues .* (max_votes-VoteValues);
         end
 
