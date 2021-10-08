@@ -241,7 +241,7 @@ elseif contains(string(type),string(InputTypes.LLRMultVote))
     if(contains(string(type),string(InputTypes.LLRMultVoteMultNaive)))
         x_naive = x_votes;
         for j = 1:size(x_naive,2)
-           x_naive(:, j) = Schemes.decode_demod_bpsk(real(demodulator(x_naive(:, j)))',1);
+           x_naive(:, j) = Schemes.decode_demod_bpsk(real(demodulator(x_naive(:, j)))',0);
         end
     end
     %------------------------------
