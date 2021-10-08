@@ -1,5 +1,5 @@
 
-clc
+clc; close all;
 % this is the file used to test some of the generation used for the lab
 
 file_prefix = "Python/models/";
@@ -12,7 +12,7 @@ for i = 1:numel(models)
     file = file_prefix + models(i) + file_suffix;
     nets{i} = importKerasNetwork(file);
 end
-SNR = [0];
+SNR = 0:1:6;
 
 load H.mat H_rev
 H = H_rev;
@@ -34,7 +34,7 @@ A_inv = inv(A_gf);
 I = [row col];
 index = sparse(I(:,1),I(:,2),1);
 decoderLDPC = comm.LDPCDecoder('ParityCheckMatrix',index);
-n_blocks = 1;
+n_blocks = 1000;
 decoder = zeros(size(SNR));
 keras = zeros(size(SNR,1), numel(nets));
 hard = zeros(size(SNR));
@@ -55,58 +55,68 @@ for  i = 1:numel(SNR)
         decoded_matlab = decoderLDPC(x);
         for k = 1:numel(nets)
             % getting relevant dataset
-            models(k)
             if contains(models(k), string(InputTypes.LLRVoteRange))
                 %note I made the order now (Naive,LLR,Votes) for all novel input schemes in Schemes.m
-                flipped = Schemes.processFlipFromVote(x_thresh,x, votes)
+                flipped = Schemes.processFlipFromVote(x_thresh,x, votes);
                 arr = [flipped; snr_calc]';
-                labels = [labels, string(InputTypes.LLRVoteRange)];
+                if i == 1 && j == 1
+                    labels = [labels, string(InputTypes.LLRVoteRange)];
+                end
                 
             elseif contains(models(k), string(InputTypes.LLRMultVoteMultNaive))
                 %Also: Am I understanding 'Schemes.interpret_demod_bpsk(...)'
                 %correctly?
                 %My idea:
-                LLRMultVoteMultNaive = Schemes.processLLRMultVoteMultNaive(Schemes.interpret_demod_bpsk(x_thresh,0),x,votes')
+                LLRMultVoteMultNaive = Schemes.processLLRMultVoteMultNaive(xhat,x,votes');
                 arr = [LLRMultVoteMultNaive; snr_calc]';
-                labels = [labels, string(InputTypes.LLRMultVoteMultNaive)];
+                if i == 1 && j == 1
+                    labels = [labels, string(InputTypes.LLRMultVoteMultNaive)];
+                end
             elseif contains(models(k), string(InputTypes.LLRMultVote))
                 %My idea:
-                LLRMultVote = Schemes.processLLRMultVote(x,votes')
+                LLRMultVote = Schemes.processLLRMultVote(x,votes');
                 arr = [LLRMultVote; snr_calc]';
-                labels = [labels, string(InputTypes.LLRMultVote)];
-                
+                if i == 1 && j == 1
+                    labels = [labels, string(InputTypes.LLRMultVote)];
+                end
             elseif contains(models(k), string(InputTypes.NaiveMultVote))
                 %My idea:
-                NaiveMultVote = Schemes.processNaiveMultVote(Schemes.interpret_demod_bpsk(x_thresh',0),votes)
+                NaiveMultVote = Schemes.processNaiveMultVote(Schemes.interpret_demod_bpsk(xhat',0),votes);
                 arr = [NaiveMultVote, snr_calc];
-                labels = [labels, string(InputTypes.NaiveMultVote)];
-                
+                if i == 1 && j == 1
+                    labels = [labels, string(InputTypes.NaiveMultVote)];
+                end
             elseif contains(models(k), string(InputTypes.LLRVote))
                 %My idea:
-                LLRVote = [x, votes]
+                LLRVote = [x, votes];
                 arr = [LLRVote;snr_calc]';
-                labels = [labels, string(InputTypes.LLRVote)];
-                
+                if i == 1 && j == 1
+                	labels = [labels, string(InputTypes.LLRVote)];
+                end
             elseif contains(models(k), string(InputTypes.NaiveVote))
                 %My idea:
-                NaiveVote = [Schemes.interpret_demod_bpsk(x_thresh,0), votes]
+                NaiveVote = [Schemes.interpret_demod_bpsk(x_thresh,0), votes];
                 arr = [NaiveVote;snr_calc]';
-                labels = [labels, string(InputTypes.NaiveVote)];
-                
+                if i == 1 && j == 1
+                    labels = [labels, string(InputTypes.NaiveVote)];
+                end
             elseif contains(models(k), string(InputTypes.Vote))
                 %My idea:
                 arr = [votes,snr_calc];
-                labels = [labels, string(InputTypes.Vote)];
-                
+                if i == 1 && j == 1
+                    labels = [labels, string(InputTypes.Vote)];
+                end
             elseif contains(models(k), string(InputTypes.LLR))
                 arr = [x; snr_calc]';
-                labels = [labels, string(InputTypes.LLR)];
-                
+                if i == 1 && j == 1
+                    labels = [labels, string(InputTypes.LLR)];
+                end
             elseif contains(models(k), string(InputTypes.Naive))
                 %My idea:
-                arr = [x_thresh; snr_calc]'
-                labels = [labels, string(InputTypes.Naive)];
-                
+                arr = [xhat; snr_calc]';
+                if i == 1 && j == 1
+                    labels = [labels, string(InputTypes.Naive)];
+                end
             end
             decoded_netork = predict(nets{k}, arr);
             testkeras_round = round(decoded_netork);
@@ -126,22 +136,26 @@ for  i = 1:numel(SNR)
     keras(i, :) = errors_keras;
     hard(i) = errors_hard;
 end
+labels = ["decoder",labels,"hard"];
 SNR = SNR';
 decoder = (decoder/(n_blocks*200))';
 keras = (keras/(n_blocks*200));
 hard = (hard/(n_blocks*200))';
-Decoders = table(SNR, decoder, keras, hard)
+tableVars = ["SNR", labels];
+vars = cellstr(tableVars);
+newArr = [SNR, decoder, keras, hard];
+Decoders = array2table(newArr, 'VariableNames', vars)
 
 %Optional Plotting
 figure
 hold on
-semilogy(decoder)
-semilogy(keras)
-semilogy(hard)
+semilogy(SNR, decoder)
+semilogy(SNR, keras)
+semilogy(SNR, hard)
 hold off
 %Because 'keras' contains two models, include two legend items - see below
 %Give proper names for legend when feel it's time
-labels = ["decoder",labels,"hard"];
+
 legend(labels);
 xlabel("SNR");
 ylabel("BER");
