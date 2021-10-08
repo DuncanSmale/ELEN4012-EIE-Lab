@@ -54,26 +54,45 @@ for  i = 1:numel(SNR)
         for k = 1:numel(nets)
             % getting relevant dataset
             if contains(model(k), string(InputTypes.LLRVoteRange))
-                flipped = FlipFromVote(x_thresh, votes, x);
+                %note I made the order now (Naive,LLR,Votes) for all novel input schemes in Schemes.m
+                flipped = Schemes.FlipFromVote(x_thresh,x, votes);
                 arr = [flipped; snr_calc]';
                 labels = [labels, string(InputTypes.LLRVoteRange)];
                 
             elseif contains(model(k), string(InputTypes.LLRMultVoteMultNaive))
+                %Also: Am I understanding 'Schemes.decode_demod_bpsk(...)'
+                %correctly?
+                %My idea:
+                values = Schemes.processLLRMultVoteMultNaive(Schemes.decode_demod_bpsk(x_thresh,0),x,votes)
+                arr = [values; snr_calc]';
                 labels = [labels, string(InputTypes.LLRMultVoteMultNaive)];
-                
             elseif contains(model(k), string(InputTypes.LLRMultVote))
+                %My idea:
+                values = Schemes.processLLRMultVote(x,votes)
+                arr = [values; snr_calc]';
                 labels = [labels, string(InputTypes.LLRMultVote)];
                 
             elseif contains(model(k), string(InputTypes.NaiveMultVote))
+                %My idea:
+                values = Schemes.processNaiveMultVote(Schemes.decode_demod_bpsk(x_thresh,0),votes)
+                arr = [values; snr_calc]';
                 labels = [labels, string(InputTypes.NaiveMultVote)];
                 
             elseif contains(model(k), string(InputTypes.LLRVote))
+                %My idea:
+                values = [x, votes];
+                arr = [values;snr_calc]';
                 labels = [labels, string(InputTypes.LLRVote)];
                 
             elseif contains(model(k), string(InputTypes.NaiveVote))
+                %My idea:
+                values = [Schemes.decode_demod_bpsk(x_thresh,0), votes];
+                arr = [values;snr_calc]';
                 labels = [labels, string(InputTypes.NaiveVote)];
                 
             elseif contains(model(k), string(InputTypes.Vote))
+                %My idea:
+                arr = [votes;snr_calc]';
                 labels = [labels, string(InputTypes.Vote)];
                 
             elseif contains(model(k), string(InputTypes.LLR))
@@ -81,6 +100,8 @@ for  i = 1:numel(SNR)
                 labels = [labels, string(InputTypes.LLR)];
                 
             elseif contains(model(k), string(InputTypes.Naive))
+                %My idea:
+                arr = [x_thresh; snr_calc]';
                 labels = [labels, string(InputTypes.Naive)];
                 
             end
