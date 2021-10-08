@@ -3,17 +3,17 @@ classdef Schemes
     methods(Static)
         function datasetOut = processNaiveMultVote(NaiveValues,VoteValues)
             max_votes = max(max(VoteValues));
-            datasetOut = (max_votes-VoteValues) .* NaiveValues;
+            datasetOut = (max_votes-VoteValues+1) .* NaiveValues;
         end
 
         function datasetOut = processLLRMultVoteMultNaive(NaiveValues,LLRValues,VoteValues)%dataset,tempvotes,x_naive)
             max_votes = max(max(VoteValues));
-            datasetOut = LLRValues .* (max_votes-VoteValues) .* NaiveValues;
+            datasetOut = LLRValues .* (max_votes-VoteValues+1) .* NaiveValues;
         end
 
         function datasetOut = processLLRMultVote(LLRValues,VoteValues)
             max_votes = max(max(VoteValues));
-            datasetOut = LLRValues .* (max_votes-VoteValues);
+            datasetOut = LLRValues .* (max_votes-VoteValues+1);
         end
 
         function datasetOut = processFlipFromVote(NaiveValues, LLRValues, VoteValues)
@@ -33,7 +33,7 @@ classdef Schemes
             %interprets and Demods - i.e. converts -9,872 to -1 to 1
             if interpretAndDecode == true
                 for bit = 1:size(rcvd,2)
-                    if rcvd(bit) <= 0
+                    if rcvd(bit) < 0
                         out(bit) = 1;
                     else
                         out(bit) = 0;
@@ -42,7 +42,7 @@ classdef Schemes
             %Only interprets - i.e. converts -9.872 to -1
             elseif interpretAndDecode == false
                 for bit = 1:size(rcvd,2)
-                    if rcvd(bit) <= 0
+                    if rcvd(bit) < 0
                         out(bit) = -1;
                     else
                         out(bit) = 1;

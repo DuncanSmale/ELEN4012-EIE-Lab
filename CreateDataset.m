@@ -128,7 +128,8 @@ elseif type == InputTypes.NaiveMultVote %Quantized Naive * (Max Vote - Vote)
     temp_votes = zeros(size(dataset));
     %demodulate noisy part
     for j = 1:size(x,2)
-        x(:, j) = Schemes.interpret_demod_bpsk(real(demodulator(x(:, j)))',0); %Note this line is now decoded
+        %x(:, j) = Schemes.interpret_demod_bpsk(real(demodulator(x(:, j)))',0); %Note this line is now decoded
+        x(:, j) = real(demodulator(x(:, j)))';
     end
 
     if percent_noisy ~= 0
@@ -239,9 +240,10 @@ elseif contains(string(type),string(InputTypes.LLRMultVote))
     %----------x_naive----------
     if(contains(string(type),string(InputTypes.LLRMultVoteMultNaive)))
         x_naive = x_votes;
-        for j = 1:size(x_naive,2)
-           x_naive(:, j) = Schemes.interpret_demod_bpsk(real(demodulator(x_naive(:, j)))',0);
-        end
+%         for j = 1:size(x_naive,2)
+%            %x_naive(:, j) = Schemes.interpret_demod_bpsk(real(demodulator(x_naive(:, j)))',0);
+%            %x_naive(:, j) = real(demodulator(x_naive(:, j)))';
+%         end
     end
     %------------------------------
     if percent_noisy ~= 0
