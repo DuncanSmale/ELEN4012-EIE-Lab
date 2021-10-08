@@ -32,7 +32,9 @@ seed = 1;
 % Try make the total elements divisible by 10
 % range of SNR values to use in the noisy portion of the dataset
 % SNR = 0:0.2:4.8; 
-SNR = 0:2:6;
+%SNR = 10:1:29;
+SNR = 0:2:6; 
+%SNR = 0:1:19;
 %SNR = -2.0:0.5:2.5;
 
 [datasetTrain, messagesTrain] = CreateDataset(type, num_messages, encoder, info_loc, parity_loc, H, percent_noisy, seed, SNR);

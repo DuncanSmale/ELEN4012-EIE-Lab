@@ -72,7 +72,7 @@ for  i = 1:numel(SNR)
                 %Also: Am I understanding 'Schemes.interpret_demod_bpsk(...)'
                 %correctly?
                 %My idea:
-                LLRMultVoteMultNaive = Schemes.processLLRMultVoteMultNaive(xhat,x,votes');
+                LLRMultVoteMultNaive = Schemes.processLLRMultVoteMultNaive(xhat,x,votes'); %Schemes.interpret_demod_bpsk(x_thresh,0)
                 arr = [LLRMultVoteMultNaive; snr_calc]';
                 if i == 1 && j == 1
                     labels = [labels, string(InputTypes.LLRMultVoteMultNaive)];
@@ -86,8 +86,8 @@ for  i = 1:numel(SNR)
                 end
             elseif contains(models(k), string(InputTypes.NaiveMultVote))
                 %My idea:
-                NaiveMultVote = Schemes.processNaiveMultVote(Schemes.interpret_demod_bpsk(xhat',0),votes);
-                arr = [NaiveMultVote, snr_calc];
+                NaiveMultVote = Schemes.processNaiveMultVote(xhat,votes');
+                arr = [NaiveMultVote', snr_calc];
                 if i == 1 && j == 1
                     labels = [labels, string(InputTypes.NaiveMultVote)];
                 end
@@ -154,9 +154,9 @@ Decoders = array2table(newArr, 'VariableNames', vars)
 %Optional Plotting
 figure
 hold on
-semilogy(SNR, decoder)
-semilogy(SNR, keras)
-semilogy(SNR, hard)
+semilogy(SNR, decoder,'LineWidth',2)
+semilogy(SNR, keras,'LineWidth',2)
+semilogy(SNR, hard,'LineWidth',2)
 hold off
 %Because 'keras' contains two models, include two legend items - see below
 %Give proper names for legend when feel it's time

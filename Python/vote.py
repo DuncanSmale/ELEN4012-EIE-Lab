@@ -16,9 +16,10 @@ from matplotlib import pyplot
 import time
 
 SEED = 42
-DATATYPE = 'LLRMultVote'
-SIZE = '1K'
-SNR = '_0_6SNR'
+DATATYPE = 'NaiveMultVote'
+SIZE = '10K'
+SNR = '_0_19SNR'
+#SNR = '_10_29SNR'
 NOISE_PERCENT = '100'
 X_PATH = '../' + DATATYPE + '/' + SIZE + SNR + \
     NOISE_PERCENT + 'data' + DATATYPE + '.txt'
