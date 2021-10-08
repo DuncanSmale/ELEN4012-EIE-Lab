@@ -2,7 +2,16 @@
 .venv
 .vscode
 *.xlsx
-*.txt
+LLR/*
+Vote/*
+LLRVote/*
+LLRMultVote/*
+LLRMultVoteMultNaive/*
+LLRVoteRange/*
+Naive/*
+NaiveMultVote/*
+NaiveVote/*
+NaiveSyndrome/*
 
 Python/models/*
 *.pyc
