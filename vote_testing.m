@@ -34,9 +34,9 @@ rcvd_msg = [0 1 0 0 1 0 0];
 % -1 ==> 1
 % rcvd = [-7 -4 2 13 3 9 -1];
 % 
-% a = decode_demod_bpsk(rcvd);
+% a = interpret_demod_bpsk(rcvd);
 % 
-% function out = decode_demod_bpsk(rcvd)
+% function out = interpret_demod_bpsk(rcvd)
 %     out = zeros(size(rcvd));
 %     for bit = 1:size(rcvd,2)
 %         if rcvd(bit) <= 0

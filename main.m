@@ -60,10 +60,10 @@ for  i = 1:numel(SNR)
                 labels = [labels, string(InputTypes.LLRVoteRange)];
                 
             elseif contains(model(k), string(InputTypes.LLRMultVoteMultNaive))
-                %Also: Am I understanding 'Schemes.decode_demod_bpsk(...)'
+                %Also: Am I understanding 'Schemes.interpret_demod_bpsk(...)'
                 %correctly?
                 %My idea:
-                values = Schemes.processLLRMultVoteMultNaive(Schemes.decode_demod_bpsk(x_thresh,0),x,votes)
+                values = Schemes.processLLRMultVoteMultNaive(Schemes.interpret_demod_bpsk(x_thresh,0),x,votes)
                 arr = [values; snr_calc]';
                 labels = [labels, string(InputTypes.LLRMultVoteMultNaive)];
             elseif contains(model(k), string(InputTypes.LLRMultVote))
@@ -74,7 +74,7 @@ for  i = 1:numel(SNR)
                 
             elseif contains(model(k), string(InputTypes.NaiveMultVote))
                 %My idea:
-                values = Schemes.processNaiveMultVote(Schemes.decode_demod_bpsk(x_thresh,0),votes)
+                values = Schemes.processNaiveMultVote(Schemes.interpret_demod_bpsk(x_thresh,0),votes)
                 arr = [values; snr_calc]';
                 labels = [labels, string(InputTypes.NaiveMultVote)];
                 
@@ -86,7 +86,7 @@ for  i = 1:numel(SNR)
                 
             elseif contains(model(k), string(InputTypes.NaiveVote))
                 %My idea:
-                values = [Schemes.decode_demod_bpsk(x_thresh,0), votes];
+                values = [Schemes.interpret_demod_bpsk(x_thresh,0), votes];
                 arr = [values;snr_calc]';
                 labels = [labels, string(InputTypes.NaiveVote)];
                 

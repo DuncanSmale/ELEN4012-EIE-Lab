@@ -27,11 +27,11 @@ classdef Schemes
             datasetOut(vals) = -datasetOut(vals);
         end
 
-        %decodeAndDecode must be either true (1) or false (0) only.
-        function out = decode_demod_bpsk(rcvd, decodeAndDecode)
+        %interpretAndDecode must be either true (1) or false (0) only.
+        function out = interpret_demod_bpsk(rcvd, interpretAndDecode)
             out = zeros(size(rcvd));
-            %Decodes and Demods - i.e. converts -9,872 to -1 to 1
-            if decodeAndDecode == true
+            %interprets and Demods - i.e. converts -9,872 to -1 to 1
+            if interpretAndDecode == true
                 for bit = 1:size(rcvd,2)
                     if rcvd(bit) <= 0
                         out(bit) = 1;
@@ -39,8 +39,8 @@ classdef Schemes
                         out(bit) = 0;
                     end
                 end
-            %Only decodes - i.e. converts -9.872 to -1
-            elseif decodeAndDecode == false
+            %Only interprets - i.e. converts -9.872 to -1
+            elseif interpretAndDecode == false
                 for bit = 1:size(rcvd,2)
                     if rcvd(bit) <= 0
                         out(bit) = -1;
@@ -49,7 +49,7 @@ classdef Schemes
                     end
                 end
             else 
-                disp("decodeAndDecode must be either true (1) or false (0) only.");
+                disp("interpretAndDecode must be either true (1) or false (0) only.");
             end
         end
         
