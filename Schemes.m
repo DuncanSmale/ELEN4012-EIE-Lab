@@ -12,7 +12,7 @@ classdef Schemes
         end
 
         function datasetOut = processLLRMultVote(LLRValues,VoteValues)
-            max_votes = max(max(VoteValues))
+            max_votes = max(max(VoteValues));
             datasetOut = LLRValues .* (max_votes-VoteValues);
         end
 
