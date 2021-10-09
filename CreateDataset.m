@@ -50,8 +50,10 @@ if percent_noisy ~= 0
 %         x(:, index:index+step-1) = awgn(x(:, index:index+step-1), i, 'measured');
         x(:, index:index+step-1) = x(:, index:index+step-1) + noise;
         for j = index:index+step-1
-            actualSNR = snr(c_mod(:, j - index + 1), x(:, j)-c_mod(:, j - index + 1));
-            snrs = [snrs; actualSNR];
+%             actualSNR = snr(c_mod(:, j - index + 1), x(:, j)-c_mod(:, j - index + 1));
+%             variance = var(x(:, j))
+            variance = (1/2)*10^(-i/10);
+            snrs = [snrs; variance];
         end
         index = index+step;
     end
@@ -89,8 +91,8 @@ elseif type == InputTypes.LLR %% LLR dataset
     index = 1;
     for j = SNR
         for k = index:index+step-1
-            actualSNR = snr(c_mod(:, k - index + 1), x(:, k)-c_mod(:, k - index + 1));
-            x(:, k) = GetLLR(x(:, k), actualSNR);
+%             actualSNR = snr(c_mod(:, k - index + 1), x(:, k)-c_mod(:, k - index + 1));
+            x(:, k) = GetLLR(x(:, k), j);
         end
         
         index = index + step;

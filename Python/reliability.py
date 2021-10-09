@@ -17,22 +17,21 @@ import time
 
 SEED = 3
 # DATATYPE = 'LLR'
-DATATYPE = 'LLR'
+DATATYPE = 'Naive'
 SIZE = '10K'
-SNR = '_20_30SNR'
+SNR = '_0_3SNR'
 NOISE_PERCENT = '100'
 PATH = '../' + DATATYPE + '/' + SIZE + SNR + NOISE_PERCENT
 X_PATH_TRAIN = PATH + 'dataTRAIN' + DATATYPE + '.txt'
 Y_PATH_TRAIN = PATH + 'messagesTRAIN' + DATATYPE + '.txt'
 X_PATH_TEST = PATH + 'dataTEST' + DATATYPE + '.txt'
 Y_PATH_TEST = PATH + 'messagesTEST' + DATATYPE + '.txt'
-FILE_NAME = X_PATH_TRAIN.split("/")[2]
 ACTIVATION = 'tanh'
-NUM_HIDDEN = 4
+NUM_HIDDEN = 2
 # MODEL_NAME = 'models/' + DATATYPE + SIZE + \
 #     SNR + NOISE_PERCENT + f'H{NUM_HIDDEN}' + ACTIVATION + '.h5'
 MODEL_NAME = 'models/' + DATATYPE + '.h5'
-EPOCHS = 25
+EPOCHS = 10
 N = 200
 models = ["Naive", "LLR", "Vote", "NaiveMultVote",
           "LLRMultVote", "LLRMultVoteMultNaive", "LLRVoteRange"]
@@ -52,7 +51,7 @@ def get_dataset():
 
 def get_model(n_inputs, n_ouputs):
     num_hidden = NUM_HIDDEN
-    drop = 0.3
+    drop = 0.2
     dense = int(30*N)
     # opt = tf.keras.optimizers.SGD(
     #     learning_rate=0.02, momentum=0.9)
@@ -62,7 +61,7 @@ def get_model(n_inputs, n_ouputs):
     for i in range(0, num_hidden):
         model.add(Dense(dense,
                         kernel_initializer=GlorotNormal(),
-                        kernel_constraint=max_norm(2),
+                        kernel_constraint=max_norm(6),
                         activation=ACTIVATION))
         model.add(Dropout(drop))
     model.add(Dense(n_ouputs, activation="sigmoid"))

@@ -17,7 +17,7 @@ classdef Schemes
         end
 
         function datasetOut = processFlipFromVote(NaiveValues, LLRValues, VoteValues)
-            threshold = 0.1;
+            threshold = 1;
             datasetOut = LLRValues;
             ind_LLR =  find(abs(NaiveValues)<threshold);
             ind_votes = find(VoteValues>2);

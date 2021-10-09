@@ -5,27 +5,21 @@ M = 100;
 K = 100;
 Eb = 1;
 
-load H.mat H_rev
-H = H_rev;
+H = readmatrix("newMatrix.txt", "Delimiter", " ");
+columns = readmatrix("columns.txt", "Delimiter", " ");
+columns = columns + 1;
+info_loc = columns(1:end/2);
+parity_loc = columns(end/2+1:end);
+H2 = H(:, columns);
 
-B_gf = gf(H(:, 1:end/2));
-A_gf = gf(H(:, end/2 + 1:end));
-
-A = double(A_gf.x);
-B = double(B_gf.x);
-
-A_inv = inv(A_gf);
-
-[row, col] = find(H_rev);
-I = [row col];
-index = sparse(I(:,1),I(:,2),1);
-decoder = comm.LDPCDecoder('ParityCheckMatrix',index);
+[temp, order] = sort(columns);
+spH2 = sparse(H2);
+encoder = comm.LDPCEncoder('ParityCheckMatrix',spH2);
 
 % seed = 1; % seeding the random number generation for recontruction
 % rng(seed);
 num_messages = 1;
 m = randi([0 1], num_messages, 100);
-m_gf = gf(m);
 
 modulator = comm.BPSKModulator;
 demodulator = comm.BPSKDemodulator;
@@ -43,20 +37,19 @@ demodulator = comm.BPSKDemodulator;
 % add noise to each codeword: "received" vector
 % noisep_db = sigp-SNR;
 % noisep = 10^(noisep_db/10);
-SNR = 1;
-noise = GetNoise(size(c_mod), SNR);
+SNR = 5;
+noise = GetNoise([200 1], SNR);
+
 % var_calc = var(noise);
-x = c_mod + noise;
-SNR_func1 = snr(c_mod, x-c_mod)
-c = GetCodeword(A_inv, B_gf, m);
 
+c = GetCodeword(encoder, info_loc, parity_loc, m);
 c_mod = 1 - 2 * c;
+x = c_mod + noise;
 
-Eb = 1;
-EbNo = 10^(SNR_func1/10)
-var_noise = 1/EbNo
+vari = (1/2)*10^(-SNR/10)
+sigma = sqrt(vari)
 
-LLR = (2/var_noise)*x;
+LLR = GetLLR(x, SNR);
 % LLR = GetLLR(x, SNR_func);
 
 total = [c x LLR];

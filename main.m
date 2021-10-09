@@ -19,7 +19,7 @@ for i = 1:numel(models)
     file = file_prefix + models(i) + file_suffix;
     nets{i} = importKerasNetwork(file);
 end
-SNR = 30:40;
+SNR = -2:10;
 
 % seed = 1; % seeding the random number generation for recontruction
 % rng(seed);
@@ -34,6 +34,7 @@ H2 = H(:, columns);
 [temp, order] = sort(columns);
 spH2 = sparse(H2);
 decoderLDPC = comm.LDPCDecoder('ParityCheckMatrix',spH2);
+encoder = comm.LDPCEncoder('ParityCheckMatrix',spH2);
 
 modulator = comm.BPSKModulator;
 demodulator = comm.BPSKDemodulator;
@@ -43,6 +44,7 @@ decoder = zeros(size(SNR));
 keras = zeros(size(SNR,1), numel(nets));
 hard = zeros(size(SNR));
 for  i = 1:numel(SNR)
+    SNR(i)
     errors_decoder = 0;
     errors_keras = zeros(1, numel(nets));
     errors_hard = 0;
@@ -55,7 +57,9 @@ for  i = 1:numel(SNR)
         x_thresh = x;
         xhat = real(demodulator(x));
         votes = GetVotes(H, xhat);
-        snr_calc = snr(c_mod, x-c_mod);
+%         snr_calc = snr(c_mod, x-c_mod);
+        snr_calc = SNR(i);
+        variance = (1/2)*10^(-SNR(i)/10);
         x = GetLLR(x, snr_calc);
         decoded_matlab = decoderLDPC(x([info_loc parity_loc]));
         for k = 1:numel(nets)
@@ -63,7 +67,7 @@ for  i = 1:numel(SNR)
             if contains(models(k), string(InputTypes.LLRVoteRange))
                 %note I made the order now (Naive,LLR,Votes) for all novel input schemes in Schemes.m
                 flipped = Schemes.processFlipFromVote(x_thresh,x, votes);
-                arr = [flipped; snr_calc]';
+                arr = [flipped; variance]';
                 if i == 1 && j == 1
                     labels = [labels, string(InputTypes.LLRVoteRange)];
                 end
@@ -73,52 +77,52 @@ for  i = 1:numel(SNR)
                 %correctly?
                 %My idea:
                 LLRMultVoteMultNaive = Schemes.processLLRMultVoteMultNaive(xhat,x,votes'); %Schemes.interpret_demod_bpsk(x_thresh,0)
-                arr = [LLRMultVoteMultNaive; snr_calc]';
+                arr = [LLRMultVoteMultNaive; variance]';
                 if i == 1 && j == 1
                     labels = [labels, string(InputTypes.LLRMultVoteMultNaive)];
                 end
             elseif contains(models(k), string(InputTypes.LLRMultVote))
                 %My idea:
                 LLRMultVote = Schemes.processLLRMultVote(x,votes');
-                arr = [LLRMultVote; snr_calc]';
+                arr = [LLRMultVote; variance]';
                 if i == 1 && j == 1
                     labels = [labels, string(InputTypes.LLRMultVote)];
                 end
             elseif contains(models(k), string(InputTypes.NaiveMultVote))
                 %My idea:
                 NaiveMultVote = Schemes.processNaiveMultVote(xhat,votes');
-                arr = [NaiveMultVote', snr_calc];
+                arr = [NaiveMultVote', variance];
                 if i == 1 && j == 1
                     labels = [labels, string(InputTypes.NaiveMultVote)];
                 end
             elseif contains(models(k), string(InputTypes.LLRVote))
                 %My idea:
                 LLRVote = [x, votes];
-                arr = [LLRVote;snr_calc]';
+                arr = [LLRVote;variance]';
                 if i == 1 && j == 1
                 	labels = [labels, string(InputTypes.LLRVote)];
                 end
             elseif contains(models(k), string(InputTypes.NaiveVote))
                 %My idea:
                 NaiveVote = [Schemes.interpret_demod_bpsk(x_thresh,0), votes];
-                arr = [NaiveVote;snr_calc]';
+                arr = [NaiveVote;variance]';
                 if i == 1 && j == 1
                     labels = [labels, string(InputTypes.NaiveVote)];
                 end
             elseif contains(models(k), string(InputTypes.Vote))
                 %My idea:
-                arr = [votes,snr_calc];
+                arr = [votes,variance];
                 if i == 1 && j == 1
                     labels = [labels, string(InputTypes.Vote)];
                 end
             elseif contains(models(k), string(InputTypes.LLR))
-                arr = [x; snr_calc]';
+                arr = [x; variance]';
                 if i == 1 && j == 1
                     labels = [labels, string(InputTypes.LLR)];
                 end
             elseif contains(models(k), string(InputTypes.Naive))
                 %My idea:
-                arr = [xhat; snr_calc]';
+                arr = [xhat; variance]';
                 if i == 1 && j == 1
                     labels = [labels, string(InputTypes.Naive)];
                 end
