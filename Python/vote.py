@@ -6,7 +6,7 @@ from keras.models import Sequential
 from keras.layers import Dense, Dropout, Input
 from keras.layers import LeakyReLU
 from keras.initializers import GlorotNormal, he_uniform
-from keras.constraints import maxnorm
+from keras.constraints import max_norm
 from sklearn.metrics import accuracy_score
 import numpy as numpy
 from numpy import mean
@@ -15,46 +15,54 @@ from tqdm.keras import TqdmCallback
 from matplotlib import pyplot
 import time
 
-SEED = 42
-DATATYPE = 'NaiveMultVote'
+SEED = 3
+# DATATYPE = 'LLR'
+DATATYPE = 'LLRVoteRange'
 SIZE = '10K'
-SNR = '_0_19SNR'
-#SNR = '_10_29SNR'
+SNR = '_0_6SNR'
 NOISE_PERCENT = '100'
-X_PATH = '../' + DATATYPE + '/' + SIZE + SNR + \
-    NOISE_PERCENT + 'data' + DATATYPE + '.txt'
-Y_PATH = '../' + DATATYPE + '/' + SIZE + SNR + \
-    NOISE_PERCENT + 'messages' + DATATYPE + '.txt'
-FILE_NAME = X_PATH.split("/")[2]
+PATH = '../' + DATATYPE + '/' + SIZE + SNR + NOISE_PERCENT
+X_PATH_TRAIN = PATH + 'dataTRAIN' + DATATYPE + '.txt'
+Y_PATH_TRAIN = PATH + 'messagesTRAIN' + DATATYPE + '.txt'
+X_PATH_TEST = PATH + 'dataTEST' + DATATYPE + '.txt'
+Y_PATH_TEST = PATH + 'messagesTEST' + DATATYPE + '.txt'
 ACTIVATION = 'tanh'
 NUM_HIDDEN = 2
-MODEL_NAME = 'models/' + DATATYPE + SIZE + \
-    SNR + NOISE_PERCENT + f'H{NUM_HIDDEN}' + ACTIVATION + '.h5'
+# MODEL_NAME = 'models/' + DATATYPE + SIZE + \
+#     SNR + NOISE_PERCENT + f'H{NUM_HIDDEN}' + ACTIVATION + '.h5'
+MODEL_NAME = 'models/' + DATATYPE + '.h5'
 EPOCHS = 10
+N = 20 #200
+models = ["Naive", "LLR", "Vote", "NaiveMultVote",
+          "LLRMultVote", "LLRMultVoteMultNaive", "LLRVoteRange"]
 
 
 def get_dataset():
     # X = numpy.loadtxt('../LLR/2M75dataLARGELLR.txt', delimiter=",")
-    X = numpy.loadtxt(X_PATH, delimiter=",")
+    X = numpy.loadtxt(X_PATH_TRAIN, delimiter=",")
+    X_test = numpy.loadtxt(X_PATH_TEST, delimiter=",")
     # y = numpy.loadtxt('../LLR/2M75messagesLARGELLR.txt', delimiter=",")
-    y = numpy.loadtxt(Y_PATH, delimiter=",")
+    y = numpy.loadtxt(Y_PATH_TRAIN, delimiter=",")
+    y_test = numpy.loadtxt(Y_PATH_TEST, delimiter=",")
     print(X.shape, y.shape)
 #     print(X[:, 0:100] == y[:, :])
-    return X, y
+    return X, y, X_test, y_test
 
 
 def get_model(n_inputs, n_ouputs):
     num_hidden = NUM_HIDDEN
-    drop = 0.1
-    dense = int(10*(n_inputs-1))
-    #opt = tf.keras.optimizers.SGD(
+    drop = 0.2
+    dense = int(30*N)
+    # opt = tf.keras.optimizers.SGD(
     #     learning_rate=0.02, momentum=0.9)
-    opt = tf.keras.optimizers.Adam(learning_rate=1e-4)
+    opt = tf.keras.optimizers.Adam(learning_rate=1e-5)
     model = Sequential()
     model.add(Input(shape=(n_inputs,)))
     for i in range(0, num_hidden):
         model.add(Dense(dense,
-                        kernel_initializer=GlorotNormal(), activation=ACTIVATION))
+                        kernel_initializer=GlorotNormal(),
+                        kernel_constraint=max_norm(6),
+                        activation=ACTIVATION))
         model.add(Dropout(drop))
     model.add(Dense(n_ouputs, activation="sigmoid"))
     model.compile(loss=keras.losses.BinaryCrossentropy(), optimizer=opt,
@@ -62,17 +70,15 @@ def get_model(n_inputs, n_ouputs):
     return model
 
 
-def evaluate_model(X, y, n_test, n_batch):
+def evaluate_model(X, y, X_test, y_test, n_batch):
     n_inputs, n_outputs = X.shape[1], y.shape[1]
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=n_test, random_state=SEED)
     history, model = fit_model(
         n_inputs, n_outputs,
-        X_train, X_test,
-        y_train, y_test,
+        X, X_test,
+        y, y_test,
         n_batch)
-    _, train_acc = model.evaluate(X_train, y_train, verbose=0)
+    _, train_acc = model.evaluate(X, y, verbose=0)
     _, test_acc = model.evaluate(X_test, y_test, verbose=0)
     print('Train: %.3f, Test: %.3f' % (train_acc, test_acc))
     fig, (ax1, ax2) = pyplot.subplots(nrows=1, ncols=2, figsize=(12, 4))
@@ -84,7 +90,6 @@ def evaluate_model(X, y, n_test, n_batch):
     ax2.plot(history.history['val_loss'], label='validation')
     ax2.legend()
     ax2.set_title('Loss')
-    pyplot.show()
 
 
 def fit_model(n_inputs, n_outputs, X_train, X_test, y_train, y_test, n_batch):
@@ -111,10 +116,10 @@ def train_model(X, y, n_test, n_batch):
 
 
 start_time = time.time()
-X, y = get_dataset()
-n_test = 0.2
-batch_size = 64
-evaluate_model(X, y, n_test, batch_size)
-#print('Accuracy: %.3f (%.3f)' % (mean(results), std(results)))
-#train_model(X, y, n_test, batch_size)
-print(f"training time: {time.time() - start_time}")
+X, y, X_test, y_test = get_dataset()
+batch_size = 16
+evaluate_model(X, y, X_test, y_test, batch_size)
+# print('Accuracy: %.3f (%.3f)' % (mean(results), std(results)))
+# train_model(X, y, n_test, batch_size)
+print(f"training time: {(time.time() - start_time)/60}")
+pyplot.show()
