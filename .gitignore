@@ -16,3 +16,4 @@ NaiveSyndrome/*
 Python/models/*
 *.pyc
 __pychace__
+*.txt
