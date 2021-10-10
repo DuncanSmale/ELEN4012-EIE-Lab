@@ -3,15 +3,10 @@ clc; close all;
 % this is the file used to test some of the generation used for the lab
 
 file_prefix = "Python/models/";
-file_suffix = "10K_0_6SNR100H3tanh.h5";
+
+file_suffix = ".h5";
 models = ["Naive", "LLR", "Vote", "NaiveMultVote",...
     "LLRMultVote", "LLRMultVoteMultNaive", "LLRVoteRange"];
-%models = ["LLRMultVote1K_0_6SNR100H2tanh.h5","LLR1K_0_6SNR100H2tanh.h5"];
-% file_suffix = "10K_20_30SNR100H8tanh.h5";
-
-%file_suffix = ".h5";
-% models = ["Naive", "LLR", "Vote", "NaiveMultVote",...
-%     "LLRMultVote", "LLRMultVoteMultNaive", "LLRVoteRange"];
 %models = ["LLR"];
 labels = [];
 nets = cell(numel(models),1);
@@ -20,6 +15,7 @@ for i = 1:numel(models)
     nets{i} = importKerasNetwork(file);
 end
 SNR = -2:10;
+%SNR = -20:1:20;
 
 % seed = 1; % seeding the random number generation for recontruction
 % rng(seed);
