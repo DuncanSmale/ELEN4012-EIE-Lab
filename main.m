@@ -35,7 +35,7 @@ encoder = comm.LDPCEncoder('ParityCheckMatrix',spH2);
 modulator = comm.BPSKModulator;
 demodulator = comm.BPSKDemodulator;
 
-n_blocks = 100;
+n_blocks = 1000;
 decoder = zeros(size(SNR));
 keras = zeros(size(SNR,1), numel(nets));
 hard = zeros(size(SNR));
