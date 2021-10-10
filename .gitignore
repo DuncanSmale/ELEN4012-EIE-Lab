@@ -8,6 +8,8 @@ LLRVote/*
 LLRMultVote/*
 LLRMultVoteMultNaive/*
 LLRVoteRange/*
+InvVoteMultRcvd/*
+LLRInvVote/*
 Naive/*
 NaiveMultVote/*
 NaiveVote/*
@@ -16,4 +18,3 @@ NaiveSyndrome/*
 Python/models/*
 *.pyc
 __pychace__
-*.txt
