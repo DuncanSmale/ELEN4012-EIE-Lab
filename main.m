@@ -7,6 +7,7 @@ file_prefix = "Python/models/";
 file_suffix = ".h5";
 models = ["Naive", "LLR", "Vote", "NaiveMultVote",...
     "LLRMultVote", "LLRMultVoteMultNaive", "LLRVoteRange"];
+load net
 %models = ["LLR"];
 labels = [];
 nets = cell(numel(models),1);
