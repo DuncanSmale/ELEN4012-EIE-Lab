@@ -1,14 +1,18 @@
 clc
-data = readmatrix('./LLR/10K_0_3SNR100dataTRAINLLR.txt', 'Delimiter', ',');
-messages = readmatrix('./LLR/10K_0_3SNR100messagesTRAINLLR.txt', 'Delimiter', ',');
-Xtest = readmatrix('./LLR/10K_0_3SNR100dataTESTLLR.txt', 'Delimiter', ',');
-Ytest = readmatrix('./LLR/10K_0_3SNR100messagesTESTLLR.txt', 'Delimiter', ',');
+type = InputTypes.NaiveMultVote;
+samples = '10K';
+SNR = '_0_3SNR100';
+prefix = './' + string(type) + '/' + samples + SNR;
+data = readmatrix(prefix + 'data' + 'TRAIN' + string(type) + '.txt', 'Delimiter', ',');
+messages = readmatrix(prefix + 'messages' + 'TRAIN' + string(type) + '.txt', 'Delimiter', ',');
+Xtest = readmatrix(prefix + 'data' + 'TEST' + string(type) + '.txt', 'Delimiter', ',');
+Ytest = readmatrix(prefix + 'messages' + 'TEST' + string(type) + '.txt', 'Delimiter', ',');
 
 miniBatchSize = 16;
 opts = trainingOptions('adam', ...
     'MiniBatchSize',miniBatchSize, ...
     'InitialLearnRate',1*10^-5, ...
-    'MaxEpochs',50, ...
+    'MaxEpochs',1, ...
     'Shuffle','every-epoch', ...
     'Plots','training-progress', ...
     'Verbose',false, ...
@@ -56,6 +60,7 @@ layers = [
     regressionLayer];
 
 net = trainNetwork(data, messages, layers, opts);
-save net
+name = string(type) + '.mat';
+save(name, 'net')
 % YPred = round(predict(net, Xtest));
 % errors = sum(sum(xor(Ytest,YPred)));

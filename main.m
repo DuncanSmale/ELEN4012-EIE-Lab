@@ -8,6 +8,12 @@ file_suffix = ".h5";
 models = ["Naive", "LLR", "Vote", "NaiveMultVote",...
     "LLRMultVote", "LLRMultVoteMultNaive", "LLRVoteRange"];
 load net
+matlabNetTypes = [InputTypes.NaiveMultVote];
+matlabNets = cell(numel(matlabNetTypes),1);
+for i = 1:numel(matlabNetTypes)
+    name = string(matlabNetTypes(i)) + '.mat';
+    matlabNets{i} = load(name, 'net');
+end
 %models = ["LLR"];
 labels = [];
 nets = cell(numel(models),1);
@@ -131,7 +137,7 @@ for  i = 1:numel(SNR)
             testkeras_check = xor(testkeras_round, m);
             errors_keras(k) = errors_keras(k) + sum(testkeras_check);
         end
-        network_matlab = predict(net, [x; variance]');
+        network_matlab = predict(matlabNets{1}.net, [x; variance]');
         testmatlab_round = round(network_matlab);
         testmatlab_check = xor(testmatlab_round, m);
         errors_matlab = errors_matlab + sum(testmatlab_check);
