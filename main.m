@@ -148,7 +148,7 @@ for  i = 1:numel(SNR)
     matlab(i) = errors_matlab;
     hard(i) = errors_hard;
 end
-labels = ["decoder",labels,"hard"];
+labels = ["decoder",labels,"MATLAB","hard"];
 SNR = SNR';
 decoder = (decoder/(n_blocks*200))';
 keras = (keras/(n_blocks*200));
