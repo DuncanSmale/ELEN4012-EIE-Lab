@@ -8,46 +8,54 @@ miniBatchSize = 16;
 opts = trainingOptions('adam', ...
     'MiniBatchSize',miniBatchSize, ...
     'InitialLearnRate',1*10^-5, ...
-    'MaxEpochs',30, ...
+    'MaxEpochs',50, ...
     'Shuffle','every-epoch', ...
     'Plots','training-progress', ...
     'Verbose',false, ...
     'ValidationData',{Xtest,Ytest});
 N = 200;
-NUM_HIDDEN = 10*N;
+NUM_HIDDEN = 20*N;
 dropout = 0.4;
 
 layers = [
     featureInputLayer(N+1)
     fullyConnectedLayer(NUM_HIDDEN)
+    layerNormalizationLayer
     tanhLayer
     dropoutLayer(dropout)
     fullyConnectedLayer(NUM_HIDDEN)
+    layerNormalizationLayer
     tanhLayer
     dropoutLayer(dropout)
     fullyConnectedLayer(NUM_HIDDEN)
+    layerNormalizationLayer
     tanhLayer
     dropoutLayer(dropout)
     fullyConnectedLayer(NUM_HIDDEN)
+    layerNormalizationLayer
     tanhLayer
     dropoutLayer(dropout)
     fullyConnectedLayer(NUM_HIDDEN)
+    layerNormalizationLayer
     tanhLayer
     dropoutLayer(dropout)
     fullyConnectedLayer(NUM_HIDDEN)
+    layerNormalizationLayer
     tanhLayer
     dropoutLayer(dropout)
     fullyConnectedLayer(NUM_HIDDEN)
+    layerNormalizationLayer
     tanhLayer
     dropoutLayer(dropout)
     fullyConnectedLayer(NUM_HIDDEN)
+    layerNormalizationLayer
     tanhLayer
     dropoutLayer(dropout)
     fullyConnectedLayer(100)
     sigmoidLayer
     regressionLayer];
 
-net = trainNetwork(features, response, layers, opts);
+net = trainNetwork(data, messages, layers, opts);
 save net
 % YPred = round(predict(net, Xtest));
 % errors = sum(sum(xor(Ytest,YPred)));
