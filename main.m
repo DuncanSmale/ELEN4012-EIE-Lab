@@ -38,12 +38,14 @@ demodulator = comm.BPSKDemodulator;
 n_blocks = 1000;
 decoder = zeros(size(SNR));
 keras = zeros(size(SNR,1), numel(nets));
+matlab = zeros(size(SNR));
 hard = zeros(size(SNR));
 for  i = 1:numel(SNR)
     SNR(i)
     errors_decoder = 0;
     errors_keras = zeros(1, numel(nets));
     errors_hard = 0;
+    errors_matlab = 0;
     for j = 1:n_blocks
         m = randi([0 1], 1, 100);
         c = GetCodeword(encoder, info_loc, parity_loc, m);
@@ -128,6 +130,10 @@ for  i = 1:numel(SNR)
             testkeras_check = xor(testkeras_round, m);
             errors_keras(k) = errors_keras(k) + sum(testkeras_check);
         end
+        network_matlab = predict(net, [x; variance]');
+        testmatlab_round = round(network_matlab);
+        testmatlab_check = xor(testmatlab_round, m);
+        errors_matlab = errors_matlab + sum(testmatlab_check);
         
         testdecoder_check = xor(decoded_matlab', m);
         
@@ -139,16 +145,18 @@ for  i = 1:numel(SNR)
     end
     decoder(i) = errors_decoder;
     keras(i, :) = errors_keras;
+    matlab(i) = errors_matlab;
     hard(i) = errors_hard;
 end
 labels = ["decoder",labels,"hard"];
 SNR = SNR';
 decoder = (decoder/(n_blocks*200))';
 keras = (keras/(n_blocks*200));
+matlab = (matlab/(n_blocks*200))';
 hard = (hard/(n_blocks*200))';
 tableVars = ["SNR", labels];
 vars = cellstr(tableVars);
-newArr = [SNR, decoder, keras, hard];
+newArr = [SNR, decoder, keras, matlab, hard];
 Decoders = array2table(newArr, 'VariableNames', vars)
 
 %Optional Plotting
@@ -156,6 +164,7 @@ figure
 hold on
 semilogy(SNR, decoder,'LineWidth',2)
 semilogy(SNR, keras,'LineWidth',2)
+semilogy(SNR, matlab,'LineWidth',2)
 semilogy(SNR, hard,'LineWidth',2)
 hold off
 %Because 'keras' contains two models, include two legend items - see below
