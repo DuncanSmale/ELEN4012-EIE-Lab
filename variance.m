@@ -12,6 +12,8 @@ info_loc = columns(1:end/2);
 parity_loc = columns(end/2+1:end);
 H2 = H(:, columns);
 
+% writematrix(H2, 'parityCheck.txt', "Delimiter", " ")
+
 [temp, order] = sort(columns);
 spH2 = sparse(H2);
 encoder = comm.LDPCEncoder('ParityCheckMatrix',spH2);
@@ -37,21 +39,26 @@ demodulator = comm.BPSKDemodulator;
 % add noise to each codeword: "received" vector
 % noisep_db = sigp-SNR;
 % noisep = 10^(noisep_db/10);
-SNR = 5;
-noise = GetNoise([200 1], SNR);
+SNR = [0];
 
-% var_calc = var(noise);
+for i = SNR
+    noise = GetNoise([200 1], i);
 
-c = GetCodeword(encoder, info_loc, parity_loc, m);
-c_mod = 1 - 2 * c;
-x = c_mod + noise;
+    % var_calc = var(noise);
 
-vari = (1/2)*10^(-SNR/10)
-sigma = sqrt(vari)
+    c = GetCodeword(encoder, info_loc, parity_loc, m);
+    c_mod = 1 - 2 * c;
+    x = c_mod + noise;
 
-LLR = GetLLR(x, SNR);
-% LLR = GetLLR(x, SNR_func);
+    vari = (1/2)*10^(-i/10)
+    sigma = sqrt(vari)
+    check = mod(H2*c([info_loc parity_loc]),2)
+    all(check == 0)
 
-total = [c x LLR];
-disp(total(1:10, :))
+    LLR = GetLLR(x, i);
+    % LLR = GetLLR(x, SNR_func);
+
+    total = [c x noise LLR];
+    disp(total(1:10, :));
+end
 
