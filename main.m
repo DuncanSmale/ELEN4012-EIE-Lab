@@ -49,12 +49,17 @@ decoder = zeros(size(SNR));
 keras = zeros(size(SNR,1), numel(nets));
 matlab = zeros(size(SNR));
 hard = zeros(size(SNR));
-for  i = 1:numel(SNR)
+parfor  i = 1:numel(SNR)
     disp("SNR: " + SNR(i))
     errors_decoder = 0;
     errors_keras = zeros(1, numel(nets));
     errors_hard = 0;
     errors_matlab = 0;
+    
+    decoderLDPC = comm.LDPCDecoder('ParityCheckMatrix',spH2);
+    encoder = comm.LDPCEncoder('ParityCheckMatrix',spH2);
+    demodulator = comm.BPSKDemodulator;
+    modulator = comm.BPSKModulator;
     tic
     for j = 1:n_blocks
         m = randi([0 1], 1, 100);
@@ -63,6 +68,7 @@ for  i = 1:numel(SNR)
         noise = GetNoise(size(c_mod), SNR(i));
         x = c_mod + noise;
         x_thresh = x;
+        
         xhat = real(demodulator(x));
         votes = GetVotes(H, xhat);
 %         snr_calc = snr(c_mod, x-c_mod);

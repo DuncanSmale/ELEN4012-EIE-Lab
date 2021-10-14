@@ -1,4 +1,4 @@
-function [dataset,messages] = CreateDataset(type, num_messages, encoder, info_loc, parity_loc,  H, percent_noisy, seed, SNR)
+function [dataset,messages] = CreateDataset(type, num_messages, encoder, info_loc, parity_loc,  H, seed, SNR, SNR_weights)
 %CREATEDATASET creates a dataset based on given parameters
 %   type:           InputTypes - Naive, LLR, Votes, LLRVotes
 %   num_messages:   int - how many messages
@@ -9,8 +9,6 @@ function [dataset,messages] = CreateDataset(type, num_messages, encoder, info_lo
 
 % TODO add SNR to all data sets and fix the size of the inputs to 201
 
-percent_noisy = clamp(percent_noisy, 0, 1);
-percent_noisy
 SNR_no_variance = 100;
 
 modulator = comm.BPSKModulator;
@@ -19,8 +17,6 @@ demodulator = comm.BPSKDemodulator;
 rng(seed);
 messages = randi([0 1], num_messages, 100);
 
-noisy_index = int32((1-percent_noisy) * num_messages) % how much of the data is noise
-num_noisy = int32(percent_noisy * num_messages);
 % noisy_index
 % num_noisy
 
@@ -28,37 +24,32 @@ num_noisy = int32(percent_noisy * num_messages);
 dataset = GetCodeword(encoder, info_loc, parity_loc, messages);
 % correct = CheckCodeword(gf(H), dataset)
 %disp("To be Noise-added (Right) Section:")
-x = dataset(:, noisy_index+1:end);
+x = dataset;
 if max(abs(mod(H*dataset,2)))>0
     error('Parity-check equations violated');
 end
 
-num_per_noise = num_noisy/numel(SNR);
-step = num_per_noise;
-index = 1;
+num_per_noise = SNR_weights * num_messages;
 
 for i = 1:size(x,2)
     x(:, i) = real(modulator(x(:, i)))';
 end
 snrs = [];
-if percent_noisy ~= 0
-    for i = SNR
-        % add noise to each codeword: "received" vector
-        c_mod = x(:, index:index+step-1);
-        dimens = [size(x,1), step];
-        noise = GetNoise(dimens, i);
-%         x(:, index:index+step-1) = awgn(x(:, index:index+step-1), i, 'measured');
-        x(:, index:index+step-1) = x(:, index:index+step-1) + noise;
-        for j = index:index+step-1
-%             actualSNR = snr(c_mod(:, j - index + 1), x(:, j)-c_mod(:, j - index + 1));
-%             variance = var(x(:, j))
-            variance = (1/2)*10^(-i/10);
-            snrs = [snrs; variance];
-        end
-        index = index+step;
+index = 1;
+for i = 1:numel(SNR)
+    % add noise to each codeword: "received" vector
+    step = num_per_noise(i);
+    c_mod = x(:, index:index+step-1);
+    dimens = [size(x,1), step];
+    noise = GetNoise(dimens, SNR(i));
+    x(:, index:index+step-1) = x(:, index:index+step-1) + noise;
+    for j = index:index+step-1
+        variance = (1/2)*10^(-SNR(i)/10);
+        snrs = [snrs; variance];
     end
+    index = index + step;
 end
-snrs = [SNR_no_variance * ones(noisy_index, 1); snrs];
+
 %disp("Received Nosiy x:")
 x;
 %[sizerow,sizecol] = size(x)
@@ -68,19 +59,15 @@ if type == InputTypes.Naive %% Naive dataset
         x(:, j) = real(demodulator(x(:, j)))';
     end
 
-    if percent_noisy ~= 0
-        dataset(:, noisy_index + 1: end) = x;
-    end
+    dataset = x;
     
 elseif type == InputTypes.NaiveSyndrome %% NaiveSyndrome dataset
     
     for j = 1:size(x,2)
         x(:, j) = real(demodulator(x(:, j)))';
     end
-    
-    if percent_noisy ~= 0
-        dataset(:, noisy_index + 1: end) = x;
-    end
+
+    dataset(:, noisy_index + 1: end) = x;
     size(dataset)
     size(H)
     syndromes = mod(H * dataset, 2);
@@ -89,23 +76,20 @@ elseif type == InputTypes.NaiveSyndrome %% NaiveSyndrome dataset
         
 elseif type == InputTypes.LLR %% LLR dataset 
     index = 1;
-    for j = SNR
+    for j = 1:numel(SNR)
+        step = num_per_noise(j);
         for k = index:index+step-1
 %             actualSNR = snr(c_mod(:, k - index + 1), x(:, k)-c_mod(:, k - index + 1));
-            x(:, k) = GetLLR(x(:, k), j);
+            x(:, k) = GetLLR(x(:, k), SNR(j));
         end
         
         index = index + step;
     end
     
-    dataset(:, noisy_index + 1: end) = x;
+    dataset = x;
     
     % since we are using LLR in the whole data set we need to get the 
     % LLR of the non noisy sections
-    for i = 1:noisy_index
-        dataset(:, i) = real(modulator(dataset(:, i)))';
-    end
-    dataset(:, 1: noisy_index) = GetLLR(dataset(:, 1: noisy_index), SNR_no_variance);
     dataset = round(dataset, 3);
 
 elseif type == InputTypes.Vote
@@ -115,17 +99,15 @@ elseif type == InputTypes.Vote
         x(:, j) = real(demodulator(x(:, j)))';
     end
 
-    if percent_noisy ~= 0
-        %Add the nosiy part to dataset
-        dataset(:, noisy_index + 1: end) = x;
-        %calculate the votes for non-noisy (should be all 0) and noisy parts
-        for j = 1:size(dataset,2)
-            temp_votes(:,j) = GetVotes(H,dataset(:,j));
-        end
-        %Replace dataset with only votes 
-        dataset = temp_votes;
+    %Add the nosiy part to dataset
+    dataset(:, noisy_index + 1: end) = x;
+    %calculate the votes for non-noisy (should be all 0) and noisy parts
+    for j = 1:size(dataset,2)
+        temp_votes(:,j) = GetVotes(H,dataset(:,j));
     end
-    
+    %Replace dataset with only votes 
+    dataset = temp_votes;
+
 elseif type == InputTypes.NaiveMultVote %Quantized Naive * (Max Vote - Vote)
     temp_votes = zeros(size(dataset));
     %demodulate noisy part
@@ -134,22 +116,20 @@ elseif type == InputTypes.NaiveMultVote %Quantized Naive * (Max Vote - Vote)
         x(:, j) = real(demodulator(x(:, j)))';
     end
 
-    if percent_noisy ~= 0
-        %Add the nosiy part to dataset
-        dataset(:, noisy_index + 1: end) = x;
-        %calculate the votes for non-noisy (should be all 0) and noisy parts
-        for j = 1:size(dataset,2)
-            temp_votes(:,j) = GetVotes(H,dataset(:,j));
-        end
-        %max_votes = max(max(temp_votes));
-        %Add the votes to the dataset
-        %dataset = dataset .* (1./(1+temp_votes));
-        dataset = Schemes.processNaiveMultVote(dataset,temp_votes);
-        %%%dataset = dataset .* (max_votes-temp_votes);
-        %Replace dataset with only votes 
-        %dataset = dataset .* (1./(1+temp_votes));
+    %Add the nosiy part to dataset
+    dataset(:, noisy_index + 1: end) = x;
+    %calculate the votes for non-noisy (should be all 0) and noisy parts
+    for j = 1:size(dataset,2)
+        temp_votes(:,j) = GetVotes(H,dataset(:,j));
     end
-
+    %max_votes = max(max(temp_votes));
+    %Add the votes to the dataset
+    %dataset = dataset .* (1./(1+temp_votes));
+    dataset = Schemes.processNaiveMultVote(dataset,temp_votes);
+    %%%dataset = dataset .* (max_votes-temp_votes);
+    %Replace dataset with only votes 
+    %dataset = dataset .* (1./(1+temp_votes));
+    
 elseif type == InputTypes.NaiveVote %% [Naive; Vote] dataset (was called 'Vote')
     temp_votes = zeros(size(dataset));
     %demodulate noisy part
@@ -157,7 +137,6 @@ elseif type == InputTypes.NaiveVote %% [Naive; Vote] dataset (was called 'Vote')
         x(:, j) = real(demodulator(x(:, j)))';
     end
 
-    if percent_noisy ~= 0
         %Add the nosiy part to dataset
         dataset(:, noisy_index + 1: end) = x;
         %calculate the votes for non-noisy (should be all 0) and noisy parts
@@ -166,7 +145,6 @@ elseif type == InputTypes.NaiveVote %% [Naive; Vote] dataset (was called 'Vote')
         end
         %Add the votes to the dataset
         dataset = [dataset; temp_votes];
-    end
 
 elseif type == InputTypes.LLRVote %% [LLR; Votes] dataset
     %Copies of the original x and dataset need to be kept to work out votes
@@ -197,7 +175,6 @@ elseif type == InputTypes.LLRVote %% [LLR; Votes] dataset
        x_votes(:, j) = real(demodulator(x_votes(:, j)))';
     end
 
-    if percent_noisy ~= 0
         %Add the nosiy part to dataset
         dataset_votes(:, noisy_index + 1: end) = x_votes;
         %calculate the votes for non-noisy (should be all 0) and noisy parts
@@ -207,7 +184,6 @@ elseif type == InputTypes.LLRVote %% [LLR; Votes] dataset
         %Add the votes to the dataset
         dataset = [dataset; temp_votes];
         %[rowds,colds] = size(dataset)
-    end
 elseif contains(string(type),string(InputTypes.LLRMultVote))
 %elseif type == InputTypes.LLRMultVote %% LLR * (Max Votes - Votes)
     %%See many options in last line of elseif
@@ -248,31 +224,29 @@ elseif contains(string(type),string(InputTypes.LLRMultVote))
 %         end
     end
     %------------------------------
-    if percent_noisy ~= 0
-        %Add the nosiy part to dataset
-        dataset_votes(:, noisy_index + 1: end) = x_votes;
-        %calculate the votes for non-noisy (should be all 0) and noisy parts
-        for j = 1:size(dataset_votes,2)
-            temp_votes(:,j) = GetVotes(H,dataset_votes(:,j));
-        end
-        %max_votes = max(max(temp_votes));
-        %Other possibilities for input schemes
-        %Add the votes to the dataset
-        %dataset = dataset .* (1./(1+temp_votes));
-        %dataset = dataset + (1/1).*(max_votes-temp_votes);
-        %dataset = dataset + (max_votes-temp_votes);
-        %dataset = dataset + (max_votes-temp_votes) + x_votes;
-        %dataset = [x_votes ; dataset .* (max_votes-temp_votes)];
-        
-        if(contains(string(type),string(InputTypes.LLRMultVoteMultNaive)))
-            %dataset = dataset .* (max_votes-temp_votes) .* x_naive;
-            dataset = Schemes.processLLRMultVoteMultNaive(x_naive,dataset,temp_votes);
-        else
-            %dataset = dataset .* (max_votes-temp_votes);
-            dataset = Schemes.processLLRMultVote(dataset,temp_votes);
-        end
-        %[rowds,colds] = size(dataset)
+    %Add the nosiy part to dataset
+    dataset_votes(:, noisy_index + 1: end) = x_votes;
+    %calculate the votes for non-noisy (should be all 0) and noisy parts
+    for j = 1:size(dataset_votes,2)
+        temp_votes(:,j) = GetVotes(H,dataset_votes(:,j));
     end
+    %max_votes = max(max(temp_votes));
+    %Other possibilities for input schemes
+    %Add the votes to the dataset
+    %dataset = dataset .* (1./(1+temp_votes));
+    %dataset = dataset + (1/1).*(max_votes-temp_votes);
+    %dataset = dataset + (max_votes-temp_votes);
+    %dataset = dataset + (max_votes-temp_votes) + x_votes;
+    %dataset = [x_votes ; dataset .* (max_votes-temp_votes)];
+
+    if(contains(string(type),string(InputTypes.LLRMultVoteMultNaive)))
+        %dataset = dataset .* (max_votes-temp_votes) .* x_naive;
+        dataset = Schemes.processLLRMultVoteMultNaive(x_naive,dataset,temp_votes);
+    else
+        %dataset = dataset .* (max_votes-temp_votes);
+        dataset = Schemes.processLLRMultVote(dataset,temp_votes);
+    end
+    %[rowds,colds] = size(dataset)
 elseif type == InputTypes.LLRVoteRange
     x_thresh = x;
     x_LLR = x;
@@ -287,13 +261,11 @@ elseif type == InputTypes.LLRVoteRange
     %----------Votes Part----------
     temp_votes = zeros(size(dataset_votes));
     
-    if percent_noisy ~= 0
-        %Add the nosiy part to dataset
-        dataset_votes(:, noisy_index + 1: end) = x_votes;
-        %calculate the votes for non-noisy (should be all 0) and noisy parts
-        for j = 1:size(dataset_votes,2)
-            temp_votes(:,j) = GetVotes(H,dataset_votes(:,j));
-        end
+    %Add the nosiy part to dataset
+    dataset_votes(:, noisy_index + 1: end) = x_votes;
+    %calculate the votes for non-noisy (should be all 0) and noisy parts
+    for j = 1:size(dataset_votes,2)
+        temp_votes(:,j) = GetVotes(H,dataset_votes(:,j));
     end
     %----------LLR Part----------
     for j = SNR
@@ -312,19 +284,14 @@ elseif type == InputTypes.LLRVoteRange
 end
 
 dataset = dataset';
-snrs = round(snrs, 3);
-size(snrs)
+snrs = round(snrs, 5);
+size(snrs);
 dataset = [dataset snrs];
 % shuffle rows to make sure that the noisy data is mixed with the normal
 % data, this will ensure minimal data bias
 % random_order = randperm(num_messages);
 % dataset = dataset(random_order, :);
 % messages = messages(random_order,:);
-end
-
-function y = clamp(x,bl,bu)
-  % return bounded value clipped between bl and bu
-  y=min(max(x,bl),bu);
 end
 
 
