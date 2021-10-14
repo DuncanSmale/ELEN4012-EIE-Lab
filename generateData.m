@@ -16,51 +16,64 @@ encoder = comm.LDPCEncoder('ParityCheckMatrix',spH2);
 
 % InputTypes are: Naive, NaiveSyndrome, LLR, Vote, NaiveVote, LLRVote, 
 % NaiveMultVote, LLRMultVote, LLRMultVoteMultNaive, LLRVoteRange
-type = InputTypes.LLR; 
+% Naive, LLR, Vote, NaiveMultVote, LLRMultVote, LLRMultVoteMultNaive, LLRVoteRange
+% allTypes = [InputTypes.Naive, InputTypes.LLR, InputTypes.Vote, ...
+%     InputTypes.NaiveMultVote, InputTypes.LLRMultVote, ... 
+%     InputTypes.LLRMultVoteMultNaive, InputTypes.LLRVoteRange];
+allTypes = [InputTypes.Naive, InputTypes.LLR];
+for type = allTypes
+    disp(type)
+    % how many messages/codewords to generate
+    num_messages = 100000;
 
-% how many messages/codewords to generate
-num_messages = 10;
+    size_validation = 0.1;
 
-size_validation = 0.2;
 
-% make this between 0 and 1
-percent_noisy = 1;
+    % rng seed to use
+    seed = 1;
 
-% rng seed to use
-seed = 1;
+    % Try make the total elements divisible by 10
+    % range of SNR values to use in the noisy portion of the dataset
+    % SNR = 0:0.2:4.8; 
+    %SNR = 10:1:29;
+    SNR = [2 4 6 8]; 
+    SNR_weights = [0.1 0.2 0.3 0.4];
+    if sum(SNR_weights) ~= 1
+       warning("SNR Weights do not sum to 1") 
+       return
+    end
 
-% Try make the total elements divisible by 10
-% range of SNR values to use in the noisy portion of the dataset
-% SNR = 0:0.2:4.8; 
-%SNR = 10:1:29;
-SNR = 0:2:6; 
-%SNR = 0:1:19;
-%SNR = -2.0:0.5:2.5;
+    [datasetTrain, messagesTrain] = CreateDataset(type, num_messages,...
+        encoder, info_loc, parity_loc, H, seed, SNR, SNR_weights);
+    
+    total_validation = num_messages * size_validation;
+    
+    [datasetTest, messagesTest] = CreateDataset(type, total_validation, ...
+        encoder, info_loc, parity_loc, H, seed*10, SNR, SNR_weights);
 
-[datasetTrain, messagesTrain] = CreateDataset(type, num_messages, encoder, info_loc, parity_loc, H, percent_noisy, seed, SNR);
+    % dont change
+    datapoints = NumToString(num_messages);
+    numSNR = "_" + num2str(SNR(1)) + "_" + num2str(SNR(end)) + "SNR";
 
-[datasetTest, messagesTest] = CreateDataset(type, num_messages * size_validation,encoder, info_loc, parity_loc, H, percent_noisy, seed+1, SNR);
+    % change to desired name of text files
+    % this function creates the folder of name LLR, change this to the string
+    % version of string(type) i.e if its votes change LLR to votes
+    if ~exist(string(type), 'dir')
+        mkdir(string(type))
+    end
 
-% dont change
-full_percent = num2str(percent_noisy * 100, '%u');
-datapoints = NumToString(num_messages);
-numSNR = "_" + num2str(SNR(1)) + "_" + num2str(SNR(end)) + "SNR";
+    message_name_train = string(type) + "/" + datapoints + numSNR + "messagesTRAIN" + string(type) + ".txt";
+    dataset_name_train = string(type) + "/" + datapoints + numSNR + "dataTRAIN" + string(type) + ".txt";
 
-% change to desired name of text files
-% this function creates the folder of name LLR, change this to the string
-% version of string(type) i.e if its votes change LLR to votes
-mkdir(string(type))
-message_name_train = string(type) + "/" + datapoints + numSNR + full_percent + "messagesTRAIN" + string(type) + ".txt";
-dataset_name_train = string(type) + "/" + datapoints + numSNR + full_percent + "dataTRAIN" + string(type) + ".txt";
+    message_name_test = string(type) + "/" + datapoints + numSNR + "messagesTEST" + string(type) + ".txt";
+    dataset_name_test = string(type) + "/" + datapoints + numSNR + "dataTEST" + string(type) + ".txt";
 
-message_name_test = string(type) + "/" + datapoints + numSNR + full_percent + "messagesTEST" + string(type) + ".txt";
-dataset_name_test = string(type) + "/" + datapoints + numSNR + full_percent + "dataTEST" + string(type) + ".txt";
+    writematrix(datasetTrain, dataset_name_train);
+    writematrix(messagesTrain, message_name_train);
 
-writematrix(datasetTrain, dataset_name_train);
-writematrix(messagesTrain, message_name_train);
-
-writematrix(datasetTest, dataset_name_test);
-writematrix(messagesTest, message_name_test);
+    writematrix(datasetTest, dataset_name_test);
+    writematrix(messagesTest, message_name_test);
+end
 
 function num_string = NumToString(num)
 num_string = num2str(num);
