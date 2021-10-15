@@ -3,7 +3,7 @@ import tensorflow as tf
 from tensorflow import keras
 from sklearn.model_selection import RepeatedKFold, train_test_split
 from keras.models import Sequential
-from keras.layers import Dense, Dropout, Input
+from keras.layers import Dense, Dropout, Input, BatchNormalization
 from keras.layers import LeakyReLU
 from keras.initializers import GlorotNormal, he_uniform
 from keras.constraints import max_norm
@@ -18,10 +18,9 @@ import time
 SEED = 3
 # DATATYPE = 'LLR'
 DATATYPE = 'Naive'
-SIZE = '10K'
-SNR = '_0_3SNR'
-NOISE_PERCENT = '100'
-PATH = '../' + DATATYPE + '/' + SIZE + SNR + NOISE_PERCENT
+SIZE = '100K'
+SNR = '_4_10SNR'
+PATH = '../' + DATATYPE + '/' + SIZE + SNR
 X_PATH_TRAIN = PATH + 'dataTRAIN' + DATATYPE + '.txt'
 Y_PATH_TRAIN = PATH + 'messagesTRAIN' + DATATYPE + '.txt'
 X_PATH_TEST = PATH + 'dataTEST' + DATATYPE + '.txt'
@@ -30,8 +29,11 @@ ACTIVATION = 'tanh'
 NUM_HIDDEN = 2
 # MODEL_NAME = 'models/' + DATATYPE + SIZE + \
 #     SNR + NOISE_PERCENT + f'H{NUM_HIDDEN}' + ACTIVATION + '.h5'
-MODEL_NAME = 'models/' + DATATYPE + '.h5'
-EPOCHS = 10
+USE_NEW = True
+MODEL_NAME = 'models/' + DATATYPE + \
+    '.h5' if USE_NEW == False else 'models/' + DATATYPE + 'NEW' + '.h5'
+EPOCHS = 50
+
 N = 200
 models = ["Naive", "LLR", "Vote", "NaiveMultVote",
           "LLRMultVote", "LLRMultVoteMultNaive", "LLRVoteRange"]
@@ -49,24 +51,66 @@ def get_dataset():
     return X, y, X_test, y_test
 
 
+def create_layer(l1, dense, drop, inputs):
+    y = Dense(dense,
+              kernel_initializer=GlorotNormal(),
+              #   kernel_constraint=max_norm(10),
+              activation=ACTIVATION)(l1)
+    y = Dropout(drop)(y)
+    c = keras.layers.concatenate([y, inputs])
+    return c
+
+
 def get_model(n_inputs, n_ouputs):
     num_hidden = NUM_HIDDEN
-    drop = 0.2
+    drop = 0.3
     dense = int(30*N)
     # opt = tf.keras.optimizers.SGD(
     #     learning_rate=0.02, momentum=0.9)
     opt = tf.keras.optimizers.Adam(learning_rate=1e-5)
-    model = Sequential()
-    model.add(Input(shape=(n_inputs,)))
-    for i in range(0, num_hidden):
-        model.add(Dense(dense,
-                        kernel_initializer=GlorotNormal(),
-                        kernel_constraint=max_norm(6),
-                        activation=ACTIVATION))
-        model.add(Dropout(drop))
-    model.add(Dense(n_ouputs, activation="sigmoid"))
+    if USE_NEW == False:
+        model = Sequential()
+        model.add(Input(shape=(n_inputs,)))
+        for i in range(0, int(num_hidden)):
+            model.add(Dense(dense,
+                            kernel_initializer=GlorotNormal(),
+                            # kernel_constraint=max_norm(10),
+                            activation=ACTIVATION))
+            model.add(Dropout(drop))
+        model.add(Dense(n_ouputs, activation="sigmoid"))
+    else:
+        inputs = keras.Input(shape=(n_inputs,), name='bits')
+        c1 = create_layer(inputs, dense, drop, inputs)
+        for i in range(NUM_HIDDEN-1):
+            c_prev = c1
+            c1 = create_layer(c_prev, dense, drop, inputs)
+        final = Dense(dense,
+                      kernel_initializer=GlorotNormal(),
+                      kernel_constraint=max_norm(10),
+                      activation=ACTIVATION)(c1)
+        final = Dropout(drop)(final)
+        c = keras.layers.concatenate([final, inputs])
+        outputs = Dense(n_ouputs, activation='sigmoid')(c)
+        model = keras.Model(inputs, outputs, name="LLR")
+        keras.utils.plot_model(model, DATATYPE + '.png', show_shapes=True)
+
     model.compile(loss=keras.losses.BinaryCrossentropy(), optimizer=opt,
                   metrics=[tf.keras.metrics.BinaryAccuracy()])
+    # inputs = keras.Input(shape=(n_inputs,), name='bits')
+    # c1 = create_layer(inputs, dense, drop, inputs)
+    # for i in range(NUM_HIDDEN-2):
+    #     c_prev = c1
+    #     c1 = create_layer(c_prev, dense, drop, inputs)
+    # final = Dense(dense,
+    #               kernel_initializer=GlorotNormal(),
+    #               kernel_constraint=max_norm(10),
+    #               activation=ACTIVATION)(c1)
+    # final = Dropout(drop)(final)
+    # outputs = Dense(n_ouputs, activation='sigmoid')(final)
+    # model = keras.Model(inputs, outputs, name="LLR")
+    # model.compile(loss=keras.losses.BinaryCrossentropy(),
+    #               optimizer=opt, metrics=[tf.keras.metrics.BinaryAccuracy()])
+    # keras.utils.plot_model(model, DATATYPE + '.png', show_shapes=True)
     return model
 
 
@@ -117,7 +161,7 @@ def train_model(X, y, n_test, n_batch):
 
 start_time = time.time()
 X, y, X_test, y_test = get_dataset()
-batch_size = 16
+batch_size = 128
 evaluate_model(X, y, X_test, y_test, batch_size)
 # print('Accuracy: %.3f (%.3f)' % (mean(results), std(results)))
 # train_model(X, y, n_test, batch_size)
