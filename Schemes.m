@@ -8,7 +8,7 @@ classdef Schemes
 
         function datasetOut = processLLRMultVoteMultNaive(NaiveValues,LLRValues,VoteValues)%dataset,tempvotes,x_naive)
             max_votes = max(max(VoteValues));
-            datasetOut = LLRValues .* (max_votes-VoteValues+1) .* NaiveValues;
+            datasetOut = abs(LLRValues) .* (max_votes-VoteValues+1) .* NaiveValues;
         end
 
         function datasetOut = processLLRMultVote(LLRValues,VoteValues)

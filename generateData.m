@@ -20,11 +20,11 @@ encoder = comm.LDPCEncoder('ParityCheckMatrix',spH2);
 % allTypes = [InputTypes.Naive, InputTypes.LLR, InputTypes.Vote, ...
 %     InputTypes.NaiveMultVote, InputTypes.LLRMultVote, ... 
 %     InputTypes.LLRMultVoteMultNaive, InputTypes.LLRVoteRange];
-allTypes = [InputTypes.Naive, InputTypes.LLR];
+allTypes = [InputTypes.LLRMultVoteMultNaive];
 for type = allTypes
     disp(type)
     % how many messages/codewords to generate
-    num_messages = 100000;
+    num_messages = 1000;
 
     size_validation = 0.1;
 
