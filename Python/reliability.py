@@ -14,10 +14,11 @@ from numpy import std
 from tqdm.keras import TqdmCallback
 from matplotlib import pyplot
 import time
+from datagen import DataGenerator
 
 SEED = 3
 # DATATYPE = 'LLR'
-DATATYPE = 'Naive'
+DATATYPE = 'LLR'
 SIZE = '100K'
 SNR = '_4_10SNR'
 PATH = '../' + DATATYPE + '/' + SIZE + SNR
@@ -26,17 +27,19 @@ Y_PATH_TRAIN = PATH + 'messagesTRAIN' + DATATYPE + '.txt'
 X_PATH_TEST = PATH + 'dataTEST' + DATATYPE + '.txt'
 Y_PATH_TEST = PATH + 'messagesTEST' + DATATYPE + '.txt'
 ACTIVATION = 'tanh'
-NUM_HIDDEN = 2
+NUM_HIDDEN = 4
 # MODEL_NAME = 'models/' + DATATYPE + SIZE + \
 #     SNR + NOISE_PERCENT + f'H{NUM_HIDDEN}' + ACTIVATION + '.h5'
 USE_NEW = True
+USE = [True, False]
 MODEL_NAME = 'models/' + DATATYPE + \
     '.h5' if USE_NEW == False else 'models/' + DATATYPE + 'NEW' + '.h5'
-EPOCHS = 50
+EPOCHS = 100
 
 N = 200
-models = ["Naive", "LLR", "Vote", "NaiveMultVote",
-          "LLRMultVote", "LLRMultVoteMultNaive", "LLRVoteRange"]
+models = ["Naive", "LLR", "NaiveMultVote",
+          "LLRMultVote", "LLRVoteRange"]
+models = ["LLR"]
 
 
 def get_dataset():
@@ -61,14 +64,26 @@ def create_layer(l1, dense, drop, inputs):
     return c
 
 
+def create_layer_back(l1, nxt, dense, drop, inputs):
+    y = Dense(dense,
+              kernel_initializer=GlorotNormal(),
+              #   kernel_constraint=max_norm(10),
+              activation=ACTIVATION)(l1)
+    y = Dropout(drop)(y)
+    c = keras.layers.concatenate([y, inputs, nxt])
+    return c
+
+
 def get_model(n_inputs, n_ouputs):
     num_hidden = NUM_HIDDEN
-    drop = 0.3
-    dense = int(30*N)
+    drop = 0.5
+    dense = int(10*N)
     # opt = tf.keras.optimizers.SGD(
     #     learning_rate=0.02, momentum=0.9)
-    opt = tf.keras.optimizers.Adam(learning_rate=1e-5)
+    opt = tf.keras.optimizers.Adam(learning_rate=1e-6)
     if USE_NEW == False:
+        num_hidden = 3
+        dense = int(40*N)
         model = Sequential()
         model.add(Input(shape=(n_inputs,)))
         for i in range(0, int(num_hidden)):
@@ -79,19 +94,21 @@ def get_model(n_inputs, n_ouputs):
             model.add(Dropout(drop))
         model.add(Dense(n_ouputs, activation="sigmoid"))
     else:
+        num_hidden = 3
+        dense = int(40*N)
         inputs = keras.Input(shape=(n_inputs,), name='bits')
-        c1 = create_layer(inputs, dense, drop, inputs)
-        for i in range(NUM_HIDDEN-1):
+        dropped = Dropout(drop)(inputs)
+        c1 = create_layer(dropped, dense, drop, inputs)
+        for i in range(num_hidden-2):
             c_prev = c1
             c1 = create_layer(c_prev, dense, drop, inputs)
         final = Dense(dense,
                       kernel_initializer=GlorotNormal(),
                       kernel_constraint=max_norm(10),
                       activation=ACTIVATION)(c1)
-        final = Dropout(drop)(final)
         c = keras.layers.concatenate([final, inputs])
         outputs = Dense(n_ouputs, activation='sigmoid')(c)
-        model = keras.Model(inputs, outputs, name="LLR")
+        model = keras.Model(inputs, outputs, name=f"{DATATYPE}NEW")
         keras.utils.plot_model(model, DATATYPE + '.png', show_shapes=True)
 
     model.compile(loss=keras.losses.BinaryCrossentropy(), optimizer=opt,
@@ -138,11 +155,13 @@ def evaluate_model(X, y, X_test, y_test, n_batch):
 
 def fit_model(n_inputs, n_outputs, X_train, X_test, y_train, y_test, n_batch):
     model = get_model(n_inputs, n_outputs)
+    model.summary()
+    print(f'Training for: {EPOCHS} Epochs')
     history = model.fit(X_train, y_train,
                         validation_data=(X_test, y_test), verbose=1,
                         epochs=EPOCHS, batch_size=n_batch, shuffle=True)
     model.save(MODEL_NAME)
-    model.summary()
+    print(f'Saving: {MODEL_NAME}')
     return history, model
 
 
@@ -159,11 +178,32 @@ def train_model(X, y, n_test, n_batch):
     model.save(MODEL_NAME)
 
 
-start_time = time.time()
-X, y, X_test, y_test = get_dataset()
-batch_size = 128
-evaluate_model(X, y, X_test, y_test, batch_size)
-# print('Accuracy: %.3f (%.3f)' % (mean(results), std(results)))
-# train_model(X, y, n_test, batch_size)
-print(f"training time: {(time.time() - start_time)/60}")
-pyplot.show()
+for use in USE:
+    USE_NEW = use
+    for model in models:
+        print(model)
+        DATATYPE = model
+        EPOCHS = 400 if "Naive" not in DATATYPE else 15
+        PATH = '../' + DATATYPE + '/' + SIZE + SNR
+        X_PATH_TRAIN = PATH + 'dataTRAIN' + DATATYPE + '.txt'
+        Y_PATH_TRAIN = PATH + 'messagesTRAIN' + DATATYPE + '.txt'
+        X_PATH_TEST = PATH + 'dataTEST' + DATATYPE + '.txt'
+        Y_PATH_TEST = PATH + 'messagesTEST' + DATATYPE + '.txt'
+        MODEL_NAME = 'models/TEST' + DATATYPE + \
+            '.h5' if USE_NEW == False else 'models/TEST' + DATATYPE + 'NEW' + '.h5'
+        start_time = time.time()
+        X, y, X_test, y_test = get_dataset()
+        batch_size = 128
+        data_train = DataGenerator(X, y)
+        data_validate = DataGenerator(X_test, y_test)
+        # evaluate_model(X, y, X_test, y_test, batch_size)
+        model = get_model(201, 100)
+        model.summary()
+        print(f'Training for: {EPOCHS} Epochs')
+        history = model.fit_generator(generator=data_train, validation_data=data_validate, verbose=1,
+                                      epochs=EPOCHS, workers=6, use_multiprocessing=True)
+        model.save(MODEL_NAME)
+        print(f'Saving: {MODEL_NAME}')
+        # print('Accuracy: %.3f (%.3f)' % (mean(results), std(results)))
+        # train_model(X, y, n_test, batch_size)
+        print(f"training time: {(time.time() - start_time)/60}")

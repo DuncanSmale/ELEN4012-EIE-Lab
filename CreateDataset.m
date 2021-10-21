@@ -274,7 +274,6 @@ elseif type == InputTypes.LLRVoteRange
         index = index + step;
     end
     
-    dataset = x;
     dataset = round(dataset, 3);
 end
 

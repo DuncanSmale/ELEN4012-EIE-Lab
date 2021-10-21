@@ -17,10 +17,13 @@ classdef Schemes
         end
 
         function datasetOut = processFlipFromVote(NaiveValues, LLRValues, VoteValues)
-            threshold = 1;
+            threshold = 0.25;
             datasetOut = LLRValues;
             ind_LLR =  find(abs(NaiveValues)<threshold);
             ind_votes = find(VoteValues>2);
+            if numel(ind_votes) < 2
+                ind_votes = find(VoteValues>1);
+            end
             lia = ismember(ind_LLR, ind_votes);
             ind = ind_LLR .* lia;
             vals = ind(ind~=0);
