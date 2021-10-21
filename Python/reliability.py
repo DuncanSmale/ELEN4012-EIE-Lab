@@ -194,14 +194,13 @@ for use in USE:
         start_time = time.time()
         X, y, X_test, y_test = get_dataset()
         batch_size = 128
-        data_train = DataGenerator(X, y)
-        data_validate = DataGenerator(X_test, y_test)
         # evaluate_model(X, y, X_test, y_test, batch_size)
         model = get_model(201, 100)
         model.summary()
         print(f'Training for: {EPOCHS} Epochs')
-        history = model.fit_generator(generator=data_train, validation_data=data_validate, verbose=1,
-                                      epochs=EPOCHS, workers=6, use_multiprocessing=True)
+        history = model.model.fit(X, y,
+                                  validation_data=(X_test, y_test), verbose=1,
+                                  epochs=EPOCHS, batch_size=n_batch, shuffle=True)
         model.save(MODEL_NAME)
         print(f'Saving: {MODEL_NAME}')
         # print('Accuracy: %.3f (%.3f)' % (mean(results), std(results)))
