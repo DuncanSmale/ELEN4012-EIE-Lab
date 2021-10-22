@@ -38,8 +38,8 @@ EPOCHS = 100
 
 N = 200
 models = ["Naive", "LLR", "NaiveMultVote",
-          "LLRMultVote", "LLRVoteRange"]
-models = ["LLR"]
+          "LLRMultVote", "LLRMultVoteMultNaive", "LLRVoteRange"]
+# models = ["LLR"]
 
 
 def get_dataset():
@@ -80,10 +80,10 @@ def get_model(n_inputs, n_ouputs):
     dense = int(10*N)
     # opt = tf.keras.optimizers.SGD(
     #     learning_rate=0.02, momentum=0.9)
-    opt = tf.keras.optimizers.Adam(learning_rate=1e-6)
+    opt = tf.keras.optimizers.Adam(learning_rate=1e-5)
     if USE_NEW == False:
-        num_hidden = 3
-        dense = int(40*N)
+        num_hidden = 4
+        dense = int(30*N)
         model = Sequential()
         model.add(Input(shape=(n_inputs,)))
         for i in range(0, int(num_hidden)):
@@ -94,8 +94,8 @@ def get_model(n_inputs, n_ouputs):
             model.add(Dropout(drop))
         model.add(Dense(n_ouputs, activation="sigmoid"))
     else:
-        num_hidden = 3
-        dense = int(40*N)
+        num_hidden = 4
+        dense = int(30*N)
         inputs = keras.Input(shape=(n_inputs,), name='bits')
         dropped = Dropout(drop)(inputs)
         c1 = create_layer(dropped, dense, drop, inputs)
@@ -183,14 +183,15 @@ for use in USE:
     for model in models:
         print(model)
         DATATYPE = model
-        EPOCHS = 400 if "Naive" not in DATATYPE else 15
+        EPOCHS = 50 if "LLR" in DATATYPE else 10
         PATH = '../' + DATATYPE + '/' + SIZE + SNR
         X_PATH_TRAIN = PATH + 'dataTRAIN' + DATATYPE + '.txt'
         Y_PATH_TRAIN = PATH + 'messagesTRAIN' + DATATYPE + '.txt'
         X_PATH_TEST = PATH + 'dataTEST' + DATATYPE + '.txt'
         Y_PATH_TEST = PATH + 'messagesTEST' + DATATYPE + '.txt'
-        MODEL_NAME = 'models/TEST' + DATATYPE + \
-            '.h5' if USE_NEW == False else 'models/TEST' + DATATYPE + 'NEW' + '.h5'
+        start = 'models/TEST'
+        MODEL_NAME = start + DATATYPE + \
+            '.h5' if USE_NEW == False else start + DATATYPE + 'NEW' + '.h5'
         start_time = time.time()
         X, y, X_test, y_test = get_dataset()
         batch_size = 128
@@ -198,10 +199,14 @@ for use in USE:
         model = get_model(201, 100)
         model.summary()
         print(f'Training for: {EPOCHS} Epochs')
-        history = model.model.fit(X, y,
-                                  validation_data=(X_test, y_test), verbose=1,
-                                  epochs=EPOCHS, batch_size=n_batch, shuffle=True)
+        history = model.fit(X, y,
+                            validation_data=(X_test, y_test), verbose=1,
+                            epochs=EPOCHS, batch_size=batch_size, shuffle=True)
+        _, train_acc = model.evaluate(X, y, verbose=0)
+        _, test_acc = model.evaluate(X_test, y_test, verbose=0)
+        print('Train: %.3f, Test: %.3f' % (train_acc, test_acc))
         model.save(MODEL_NAME)
+
         print(f'Saving: {MODEL_NAME}')
         # print('Accuracy: %.3f (%.3f)' % (mean(results), std(results)))
         # train_model(X, y, n_test, batch_size)

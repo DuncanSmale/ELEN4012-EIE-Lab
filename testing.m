@@ -1,4 +1,7 @@
 clc
+
+seed = 1; % seeding the random number generation for recontruction
+rng(seed);
 matrix = readmatrix("newMatrix.txt", "Delimiter", " ");
 columns = readmatrix("columns.txt", "Delimiter", " ");
 columns = columns + 1;
@@ -6,54 +9,65 @@ info_loc = columns(1:end/2);
 parity_loc = columns(end/2+1:end);
 H = matrix;
 H2 = H(:, columns);
-m = randi([0 1], 1, 100);
 
-[temp, order] = sort([info_loc parity_loc]);
+[temp, order] = sort(columns);
 spH2 = sparse(H2);
+
+%%%%%%% make these either 1 or 0, 1 is use, 0 is do not use
+use_keras = 1;
+%%%%%%%
+n_blocks = 1*10^5;
+%%%%%%%
+SNR = 0:0.5:10;
+
+decoderLDPC = comm.LDPCDecoder('ParityCheckMatrix',spH2);
+decoderLDPCC = parallel.pool.Constant(decoderLDPC);
 encoder = comm.LDPCEncoder('ParityCheckMatrix',spH2);
-decoder = comm.LDPCDecoder('ParityCheckMatrix',spH2);
-inter = step(encoder, m');
+encoderC = parallel.pool.Constant(encoder);
+demodulator = comm.BPSKDemodulator;
+modulator = comm.BPSKModulator;
 
-codeword = inter(order);
-[codeword(info_loc) m'];
+messages = parallel.pool.Constant(randi([0 1], n_blocks, 100));
 
-modulated = 1 - 2*codeword;
-decoded = decoder(modulated([info_loc parity_loc]));
-check = decoded == m';
-correct = all(check(:))
-
-% Test whether codeword is right. No error should occur
-if max(abs(mod(H*codeword,2)))>0
-    error('Parity-check equations violated');
+%%% BP Decoder and Uncoded
+disp("BP and Uncoded")
+decoder = zeros(size(SNR));
+hard = zeros(size(SNR));
+s = rng;
+parfor i = 1:numel(SNR)
+    disp("SNR: " + SNR(i))
+    errors_decoder = 0;
+    errors_hard = 0;
+    tic
+    for j = 1:n_blocks
+        m = messages.Value(j, :);
+        c = GetCodeword(encoderC.Value, info_loc, parity_loc, m);
+        c_mod = 1 - 2*c;
+        noise = GetNoise(size(c_mod), SNR(i));
+        x = c_mod + noise;
+        xhat = real(demodulator(x))';
+        decoding = x';
+        decoded_bp = decoderLDPCC.Value(decoding([info_loc parity_loc])');
+        testdecoder_check = xor(decoded_bp', m);
+        
+        hard_decoding = xhat;
+        testhard_check = xor(hard_decoding(info_loc), m);
+        
+        errors_decoder = errors_decoder + sum(testdecoder_check);
+        errors_hard = errors_hard + sum(testhard_check);
+    end
+    decoder(i) = errors_decoder;
+    hard(i) = errors_hard;
+    toc
 end
-if max(abs(codeword(info_loc)- m'))>0
-    error('Information bits mismatched');
+
+decoder = (decoder/(n_blocks*200))';
+hard = (hard/(n_blocks*200))';
+
+if ~exist("results", 'dir')
+    disp("Creating results directory")
+    mkdir("results")
 end
-
-
-% load H.mat H_rev
-% H = H_rev;
-% H = H2;
-% rows=size(H,1);
-% cols=size(H,2);
-% 
-% O=H*H';   
-% for i=1:rows
-%     O(i,i)=0;
-% end
-% for i=1:rows
-% girth(i)=max(O(i,:));
-% end
-% girth4=max(girth);
-% if girth4<2 
-%   fprintf('No girth 4')
-% else
-%    fprintf('The H matrix has girth 4')  % Provde the test result.
-% end    
-% % Display the matrice H and O
-% % If H matrix has no gith4, the O matrix in Fig.2 has no entry value to
-% % larger than 1.
-% figure(1)
-% mesh(H)
-% figure(2)
-% mesh(O)
+save("results/s.mat", "s");
+writematrix(decoder, "results/decoder.txt")
+writematrix(hard, "results/hard.txt")
