@@ -2,6 +2,7 @@
 .venv
 .vscode
 *.xlsx
+
 LLR/*
 Vote/*
 LLRVote/*
@@ -16,5 +17,7 @@ NaiveVote/*
 NaiveSyndrome/*
 
 Python/models/*
+Python/*.png
 *.pyc
 __pychace__
+*.mat
