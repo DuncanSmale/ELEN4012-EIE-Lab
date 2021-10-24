@@ -11,8 +11,9 @@ models2 = ["TEST6NaiveNEW", "TEST6LLRNEW", "TEST6NaiveMultVoteNEW",...
     "TEST6LLRMultVoteNEW", "TEST6LLRVoteRangeNEW"];
 modelsall = [models1; models2];
 % modelsall = [models1];
-savename = ["Figs/MLP7", "Figs/MLPInputReference7"];
+savename = ["Figs/MLP8", "Figs/MLPInputReference8"];
 titlename = ["MLP Decoders", "Input Reference MLP Decoders"];
+filenamesave = ["MLP.txt", "MLPInputReference.txt"];
 
 seed = 1; % seeding the random number generation for recontruction
 rng(seed);
@@ -30,7 +31,7 @@ spH2 = sparse(H2);
 %%%%%%% make these either 1 or 0, 1 is use, 0 is do not use
 use_keras = 1;
 %%%%%%%
-n_blocks = 1*10^4;
+n_blocks = 1*10^5;
 %%%%%%%
 SNR = 0:0.5:10;
 
@@ -194,6 +195,7 @@ for u = 1:size(modelsall,1)
             
             toc
         end
+        writematrix(keras, "results/" + titlename(u) + ".txt")
     end
     
     keras = (keras/(n_blocks*200));
@@ -229,9 +231,10 @@ for u = 1:size(modelsall,1)
     legend(true_labels);
     xlabel("SNR (dB)");
     ylabel("BER");
-    % title("BER vs SNR MLP Decoders")
     title("BER vs SNR " + titlename(u))
     saveas(gcf, savename(u) + ".pdf")
     saveas(gcf, savename(u) + ".fig")
+    writematrix(keras, "results/" + filenamesave(u))
 end
+writematrix(["Naive", "LLR", "NaiveMultVote", "LLRMultVote", "LLRVoteRange"], "results/labels.txt")
 
