@@ -3,17 +3,23 @@ classdef Schemes
     methods(Static)
         function datasetOut = processNaiveMultVote(NaiveValues,VoteValues)
             max_votes = max(max(VoteValues));
+            scale = 1./(VoteValues+1);
             datasetOut = (max_votes-VoteValues+1) .* NaiveValues;
+%             datasetOut = scale .* NaiveValues;
         end
 
         function datasetOut = processLLRMultVoteMultNaive(NaiveValues,LLRValues,VoteValues)%dataset,tempvotes,x_naive)
             max_votes = max(max(VoteValues));
-            datasetOut = abs(LLRValues) .* (max_votes-VoteValues+1) .* NaiveValues;
+            scale = 1./(VoteValues+1);
+%             datasetOut = abs(LLRValues) .* (max_votes-VoteValues+1) .* NaiveValues;
+            datasetOut = abs(LLRValues) .* scale .* NaiveValues;
         end
 
         function datasetOut = processLLRMultVote(LLRValues,VoteValues)
             max_votes = max(max(VoteValues));
-            datasetOut = LLRValues .* (max_votes-VoteValues+1);
+            scale = 1./(VoteValues+1);
+%             datasetOut = LLRValues .* (max_votes-VoteValues+1);
+            datasetOut = LLRValues .* scale;
         end
 
         function datasetOut = processFlipFromVote(NaiveValues, LLRValues, VoteValues)
@@ -23,6 +29,9 @@ classdef Schemes
             ind_votes = find(VoteValues>2);
             if numel(ind_votes) < 2
                 ind_votes = find(VoteValues>1);
+            end
+            if numel(ind_votes) < 2
+                ind_votes = find(VoteValues>0);
             end
             lia = ismember(ind_LLR, ind_votes);
             ind = ind_LLR .* lia;

@@ -5,13 +5,13 @@ tic
 file_prefix = "Python/models/";
 file_suffix = ".h5";
 
-models1 = ["TESTNaive", "TESTLLR", "TESTNaiveMultVote",...
-    "TESTLLRMultVote", "LLRMultVoteMultNaive", "TESTLLRVoteRange"];
-models2 = ["TESTNaiveNEW", "TESTLLRNEW", "TESTNaiveMultVoteNEW",...
-    "TESTLLRMultVoteNEW", "LLRMultVoteMultNaive", "TESTLLRVoteRangeNEW"];
+models1 = ["TEST6Naive", "TEST6LLR", "TEST6NaiveMultVote",...
+    "TEST6LLRMultVote", "TEST6LLRVoteRange"];
+models2 = ["TEST6NaiveNEW", "TEST6LLRNEW", "TEST6NaiveMultVoteNEW",...
+    "TEST6LLRMultVoteNEW", "TEST6LLRVoteRangeNEW"];
 modelsall = [models1; models2];
 % modelsall = [models1];
-savename = ["Figs/MLP2", "Figs/MLPInputReference2"];
+savename = ["Figs/MLP7", "Figs/MLPInputReference7"];
 titlename = ["MLP Decoders", "Input Reference MLP Decoders"];
 
 seed = 1; % seeding the random number generation for recontruction
@@ -48,6 +48,7 @@ if isfile("results/s.mat")
     decoder = readmatrix("results/decoder.txt");
     hard = readmatrix("results/hard.txt");
     s = load("results/s.mat", "s");
+    s = s.s;
 else
     %%% BP Decoder and Uncoded
     disp("BP and Uncoded")
@@ -141,7 +142,7 @@ for u = 1:size(modelsall,1)
                     end
                 elseif contains(models(k), string(InputTypes.NaiveMultVote))
                     %My idea:
-                    NaiveMultVote = Schemes.processNaiveMultVote(naiveQ,votes);
+                    NaiveMultVote = Schemes.processNaiveMultVote(xhat,votes);
                     arr = [NaiveMultVote, variance];
                     if i == 1 && j == 1
                         labels = [labels, string(InputTypes.NaiveMultVote)];
@@ -201,7 +202,8 @@ for u = 1:size(modelsall,1)
     
     newArr = [SNR_flip, decoder, hard];
     true_labels = ["BP Decoder","Uncoded LDPC"];
-    true_labels = [true_labels, "Naive", "LLR", "NaiveMultVote", "LLRMultVote", "LLRMultVoteMultNaive", "LLRVoteRange"];
+    true_labels = [true_labels, ...
+        "Naive", "LLR", "NaiveMultVote", "LLRMultVote", "LLRVoteRange"];
     newArr = [newArr, keras];
     
     tableVars = ["SNR", true_labels];
