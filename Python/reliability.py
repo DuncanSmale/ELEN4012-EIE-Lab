@@ -62,10 +62,10 @@ def create_layer(l1, dense, drop, inputs):
 
 
 def get_model(n_inputs, n_ouputs):
-    NUM_HIDDEN = 10
+    NUM_HIDDEN = 6
     num_hidden = NUM_HIDDEN
     drop = 0.3
-    dense = int(20*N)
+    dense = int(30*N)
     opt = tf.keras.optimizers.Adam(learning_rate=1e-6)
     if USE_NEW == False:
         model = Sequential()

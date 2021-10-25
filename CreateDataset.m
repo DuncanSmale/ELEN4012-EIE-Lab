@@ -101,7 +101,7 @@ elseif type == InputTypes.NaiveMultVote %Quantized Naive * (Max Vote - Vote)
     %demodulate noisy part
     for j = 1:size(x,2)
         
-        naiveQ(:, j) = Schemes.interpret_demod_bpsk(naiveQ(:, j)',0); %Note this line is now decoded
+        naiveQ(:, j) = Schemes.interpret_demod_bpsk(naiveQ(:, j)',1); %Note this line is now decoded
         x(:, j) = real(demodulator(x(:, j)))';
     end
 
