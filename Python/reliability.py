@@ -35,7 +35,7 @@ MODEL_NAME = 'models/' + DATATYPE + \
     '.h5' if USE_NEW == False else 'models/' + DATATYPE + 'NEW' + '.h5'
 # "Naive", "LLR", "NaiveMultVote",
 N = 200
-models = ["Naive", "LLR", "NaiveMultVote", "LLRMultVote", "LLRVoteRange"]
+models = ["LLR", "NaiveMultVote", "LLRMultVote", "LLRVoteRange"]
 # models = ["LLR"]
 
 
@@ -54,7 +54,7 @@ def get_dataset():
 def create_layer(l1, dense, drop, inputs):
     y = Dense(dense,
               kernel_initializer=GlorotNormal(),
-              #   kernel_constraint=max_norm(10),
+              kernel_constraint=max_norm(10),
               activation=ACTIVATION)(l1)
     y = Dropout(drop)(y)
     c = keras.layers.concatenate([y, inputs])
@@ -62,10 +62,10 @@ def create_layer(l1, dense, drop, inputs):
 
 
 def get_model(n_inputs, n_ouputs):
-    NUM_HIDDEN = 6
+    NUM_HIDDEN = 10
     num_hidden = NUM_HIDDEN
-    drop = 0.3
-    dense = int(30*N)
+    drop = 0.4
+    dense = int(25*N)
     opt = tf.keras.optimizers.Adam(learning_rate=1e-6)
     if USE_NEW == False:
         model = Sequential()
@@ -73,7 +73,7 @@ def get_model(n_inputs, n_ouputs):
         for i in range(0, int(num_hidden)):
             model.add(Dense(dense,
                             kernel_initializer=GlorotNormal(),
-                            # kernel_constraint=max_norm(10),
+                            kernel_constraint=max_norm(10),
                             activation=ACTIVATION))
             model.add(Dropout(drop))
         model.add(Dense(n_ouputs, activation="sigmoid"))
@@ -110,7 +110,7 @@ for modelname in models:
         Y_PATH_TRAIN = PATH + 'messagesTRAIN' + DATATYPE + '.txt'
         X_PATH_TEST = PATH + 'dataTEST' + DATATYPE + '.txt'
         Y_PATH_TEST = PATH + 'messagesTEST' + DATATYPE + '.txt'
-        start = 'models/TEST6'
+        start = 'models/TEST2510'
         MODEL_NAME = start + DATATYPE + \
             '.h5' if USE_NEW == False else start + DATATYPE + 'NEW' + '.h5'
         start_time = time.time()

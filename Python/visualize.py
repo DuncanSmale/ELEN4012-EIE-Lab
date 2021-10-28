@@ -10,17 +10,8 @@ import matplotlib.pyplot as plt
 # model = tf.keras.models.load_model("models/TEST6LLRVoteRangeNEW.h5")
 # keras.utils.plot_model(model, 'MLPInputRef.pdf', show_shapes=True)
 
-DATATYPE = 'LLR'
-SIZE = '1K'
-SNR = '_4_10SNR'
-PATH = '../' + DATATYPE + '/' + SIZE + SNR
-X_PATH_TRAIN = PATH + 'dataTRAIN' + DATATYPE + '.txt'
-Y_PATH_TRAIN = PATH + 'messagesTRAIN' + DATATYPE + '.txt'
-X_PATH_TEST = PATH + 'dataTEST' + DATATYPE + '.txt'
-Y_PATH_TEST = PATH + 'messagesTEST' + DATATYPE + '.txt'
-
-models = ["Naive", "LLR", "NaiveMultVote", "LLRMultVote", "LLRVoteRange",
-          "NaiveNEW", "LLRNEW", "NaiveMultVoteNEW", "LLRMultVoteNEW", "LLRVoteRangeNEW"]
+models = ["NaiveMultVote", "LLRVoteRange",
+          "NaiveMultVoteNEW", "LLRVoteRangeNEW"]
 
 
 def get_dataset():
@@ -39,11 +30,19 @@ labels = ["".join("c" + str(i)) for i in range(0, 100)]
 
 
 for mod in models:
-    DATATYPE = mod
+    no_new = mod.replace('NEW', '')
+    DATATYPE = no_new
+    SIZE = '10K'
+    SNR = '_6_6SNR'
+    PATH = '../' + DATATYPE + '/' + SIZE + SNR
+    X_PATH_TRAIN = PATH + 'dataTRAIN' + DATATYPE + '.txt'
+    Y_PATH_TRAIN = PATH + 'messagesTRAIN' + DATATYPE + '.txt'
+    X_PATH_TEST = PATH + 'dataTEST' + DATATYPE + '.txt'
+    Y_PATH_TEST = PATH + 'messagesTEST' + DATATYPE + '.txt'
     model = tf.keras.models.load_model("models/TEST6" + mod + ".h5")
     X, y, X_test, y_test = get_dataset()
     y_pred = y
-    for i in range(1000):
+    for i in range(10000):
         inp = X[i, :]
         inp = numpy.reshape(inp, (1, 201))
         # print(inp)
@@ -51,15 +50,17 @@ for mod in models:
     y_pred = numpy.round(y_pred)
     y = numpy.round(y)
     # multilabel_confusion_matrix(y, y_pred)
-    f, axes = plt.subplots(10, 10, figsize=(60, 20))
+    f, axes = plt.subplots(20, 5, figsize=(30, 50))
     plt.xlabel("Predicted label")
     plt.ylabel("True label")
+    # plt.rcParams.update({'font.size': 10})
     axes = axes.ravel()
     for i in range(100):
         # print(y[i, :])
         # print(y_pred[i, :])
-        disp = ConfusionMatrixDisplay(confusion_matrix(y[i, :],
-                                                       y_pred[i, :]),
+        # print(numpy.shape(y[:, i]))
+        # print(numpy.shape(y_pred[:, i]))
+        disp = ConfusionMatrixDisplay(confusion_matrix(y[:, i], y_pred[:, i]),
                                       display_labels=[0, 1])
         disp.plot(ax=axes[i], values_format='.4g')
         disp.ax_.set_title(f'c {i}')
@@ -71,10 +72,10 @@ for mod in models:
         #     disp.ax_.set_ylabel('')
         disp.im_.colorbar.remove()
 
-    for a in axes:
-        a.set_aspect('equal')
-
+    # for a in axes:
+    #     a.set_aspect('equal')
     plt.subplots_adjust(right=0.4, wspace=0.3, hspace=1.2)
+    plt.tight_layout()
     f.colorbar(disp.im_, ax=axes)
     plt.show()
-    f.savefig("confusion/" + DATATYPE + ".pdf", bbox_inches='tight')
+    f.savefig("confusion/" + mod + "2.pdf", bbox_inches='tight')
