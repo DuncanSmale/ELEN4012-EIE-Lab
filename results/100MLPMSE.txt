@@ -1,0 +1,2 @@
+Naive,LLR,NaiveMultVote,LLRMultVote,LLRVoteRange
+5.021e-06,3.725e-07,2.032e-05,3.7604e-07,3.5482e-07
